@@ -1,0 +1,6 @@
+{
+  "name": "Macro-Planning Broderie Traditionnelle (Réf: S34)",
+  "description": "Application hors-ligne de planification de production et dispatch hebdomadaire basée sur MACRO-PLANNING BROD TRADI S34.xlsx et le script Python planning_app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

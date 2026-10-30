@@ -1,0 +1,1553 @@
+{
+  "config": {
+    "semaine_courante": "S34"
+  },
+  "semaines": [
+    {
+      "id": 1,
+      "code": "S29",
+      "date_debut": "2026-07-13",
+      "ordre": 0,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 2,
+      "code": "S30",
+      "date_debut": "2026-07-20",
+      "ordre": 1,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 3,
+      "code": "S31",
+      "date_debut": "2026-07-27",
+      "ordre": 2,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 4,
+      "code": "S32",
+      "date_debut": "2026-08-03",
+      "ordre": 3,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 5,
+      "code": "S33",
+      "date_debut": "2026-08-10",
+      "ordre": 4,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 6,
+      "code": "S34",
+      "date_debut": "2026-08-17",
+      "ordre": 5,
+      "capacite_brodeuses": 1845.0
+    },
+    {
+      "id": 7,
+      "code": "S35",
+      "date_debut": "2026-08-24",
+      "ordre": 6,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 8,
+      "code": "S36",
+      "date_debut": "2026-08-31",
+      "ordre": 7,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 9,
+      "code": "S37",
+      "date_debut": "2026-09-07",
+      "ordre": 8,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 10,
+      "code": "S38",
+      "date_debut": "2026-09-14",
+      "ordre": 9,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 11,
+      "code": "S39",
+      "date_debut": "2026-09-21",
+      "ordre": 10,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 12,
+      "code": "S40",
+      "date_debut": "2026-09-28",
+      "ordre": 11,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 13,
+      "code": "S41",
+      "date_debut": "2026-10-05",
+      "ordre": 12,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 14,
+      "code": "S42",
+      "date_debut": "2026-10-12",
+      "ordre": 13,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 15,
+      "code": "S43",
+      "date_debut": "2026-10-19",
+      "ordre": 14,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 16,
+      "code": "S44",
+      "date_debut": "2026-10-26",
+      "ordre": 15,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 17,
+      "code": "S45",
+      "date_debut": "2026-11-02",
+      "ordre": 16,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 18,
+      "code": "S46",
+      "date_debut": "2026-11-09",
+      "ordre": 17,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 19,
+      "code": "S47",
+      "date_debut": "2026-11-16",
+      "ordre": 18,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 20,
+      "code": "S48",
+      "date_debut": "2026-11-23",
+      "ordre": 19,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 21,
+      "code": "S49",
+      "date_debut": "2026-11-30",
+      "ordre": 20,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 22,
+      "code": "S50",
+      "date_debut": "2026-12-07",
+      "ordre": 21,
+      "capacite_brodeuses": null
+    },
+    {
+      "id": 23,
+      "code": "S51",
+      "date_debut": "2026-12-14",
+      "ordre": 22,
+      "capacite_brodeuses": null
+    }
+  ],
+  "commandes": [
+    {
+      "id": 1,
+      "client": "ZIMMERMANN C27",
+      "modele": "SMALL FRINGE NATUREL",
+      "qte_commande": 344.0,
+      "unite": "PCS",
+      "heure_pcs": 22.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 61.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 0,
+      "archive": 0
+    },
+    {
+      "id": 2,
+      "client": "ZIMMERMANN C27",
+      "modele": "SMALL FRINGE NATUREL V2",
+      "qte_commande": 30.0,
+      "unite": "PCS",
+      "heure_pcs": 22.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 1,
+      "archive": 0
+    },
+    {
+      "id": 3,
+      "client": "ZIMMERMANN C27",
+      "modele": "SMALL FRINGE PEACH",
+      "qte_commande": 222.0,
+      "unite": "PCS",
+      "heure_pcs": 22.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 2,
+      "archive": 0
+    },
+    {
+      "id": 4,
+      "client": "ZIMMERMANN C27",
+      "modele": "SMALL FRINGE LEMON",
+      "qte_commande": 120.0,
+      "unite": "PCS",
+      "heure_pcs": 22.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 3,
+      "archive": 0
+    },
+    {
+      "id": 5,
+      "client": "ZIMMERMANN C27",
+      "modele": "SMALL SHELL NATUREL / MULTI",
+      "qte_commande": 410.0,
+      "unite": "PCS",
+      "heure_pcs": 22.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 4,
+      "archive": 0
+    },
+    {
+      "id": 6,
+      "client": "ZIMMERMANN C27",
+      "modele": "MEDIUM FRINGE NATUREL",
+      "qte_commande": 73.0,
+      "unite": "PCS",
+      "heure_pcs": 29.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 8.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 5,
+      "archive": 0
+    },
+    {
+      "id": 7,
+      "client": "ZIMMERMANN C27",
+      "modele": "MEDIUM FRINGE LEMON",
+      "qte_commande": 80.0,
+      "unite": "PCS",
+      "heure_pcs": 29.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 6,
+      "archive": 0
+    },
+    {
+      "id": 8,
+      "client": "ZIMMERMANN C27",
+      "modele": "MEDIUM FRINGE PEACH",
+      "qte_commande": 80.0,
+      "unite": "PCS",
+      "heure_pcs": 29.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 7,
+      "archive": 0
+    },
+    {
+      "id": 9,
+      "client": "ZIMMERMANN C27",
+      "modele": "MEDIUM SHELL NATUREL / MULTI",
+      "qte_commande": 330.0,
+      "unite": "PCS",
+      "heure_pcs": 29.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 8,
+      "archive": 0
+    },
+    {
+      "id": 10,
+      "client": "ZIMMERMANN C27",
+      "modele": "BANANA HOBO FRINGE NATUREL",
+      "qte_commande": 550.0,
+      "unite": "PCS",
+      "heure_pcs": 15.7,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 9,
+      "archive": 0
+    },
+    {
+      "id": 11,
+      "client": "ZIMMERMANN C27",
+      "modele": "BANANA HOBO FRINGE PEACH",
+      "qte_commande": 100.0,
+      "unite": "PCS",
+      "heure_pcs": 15.7,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 10,
+      "archive": 0
+    },
+    {
+      "id": 12,
+      "client": "ZIMMERMANN C27",
+      "modele": "BANANA HOBO SHELL NATUREL/MULTI",
+      "qte_commande": 150.0,
+      "unite": "PCS",
+      "heure_pcs": 15.7,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 11,
+      "archive": 0
+    },
+    {
+      "id": 13,
+      "client": "ZIMMERMANN C27",
+      "modele": "MEDIUM RUFFLE NATUREL",
+      "qte_commande": 500.0,
+      "unite": "PCS",
+      "heure_pcs": 38.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 229.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 12,
+      "archive": 0
+    },
+    {
+      "id": 14,
+      "client": "ZIMMERMANN C27",
+      "modele": "SMALL RUFFLE NATUREL v1",
+      "qte_commande": 120.0,
+      "unite": "PCS",
+      "heure_pcs": 22.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 60.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 13,
+      "archive": 0
+    },
+    {
+      "id": 15,
+      "client": "ZIMMERMANN C27",
+      "modele": "SMALL RUFFLE NATUREL v2",
+      "qte_commande": 130.0,
+      "unite": "PCS",
+      "heure_pcs": 22.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 14,
+      "archive": 0
+    },
+    {
+      "id": 16,
+      "client": "ZIMMERMANN SS27",
+      "modele": "SMALL SHELL BLACK WHITE",
+      "qte_commande": 480.0,
+      "unite": "PCS",
+      "heure_pcs": null,
+      "heure_pcs_tbc": 1,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 15,
+      "archive": 0
+    },
+    {
+      "id": 17,
+      "client": "ZIMMERMANN SS27",
+      "modele": "MEDIUM SHELL BLACK WHITE",
+      "qte_commande": 250.0,
+      "unite": "PCS",
+      "heure_pcs": null,
+      "heure_pcs_tbc": 1,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 16,
+      "archive": 0
+    },
+    {
+      "id": 18,
+      "client": "ZIMMERMANN SS27",
+      "modele": "SMALL RUFFLE NATUREL",
+      "qte_commande": 230.0,
+      "unite": "PCS",
+      "heure_pcs": null,
+      "heure_pcs_tbc": 1,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 17,
+      "archive": 0
+    },
+    {
+      "id": 19,
+      "client": "ZIMMERMANN SS27",
+      "modele": "MEDIUM SHELL CHOCO",
+      "qte_commande": 100.0,
+      "unite": "PCS",
+      "heure_pcs": null,
+      "heure_pcs_tbc": 1,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 18,
+      "archive": 0
+    },
+    {
+      "id": 20,
+      "client": "ZIMMERMANN SS27",
+      "modele": "SMALL SHELL CHOCO",
+      "qte_commande": 180.0,
+      "unite": "PCS",
+      "heure_pcs": null,
+      "heure_pcs_tbc": 1,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 19,
+      "archive": 0
+    },
+    {
+      "id": 21,
+      "client": "ZIMMERMANN SS27",
+      "modele": "SMALL FLOWER NATUREL",
+      "qte_commande": 550.0,
+      "unite": "PCS",
+      "heure_pcs": null,
+      "heure_pcs_tbc": 1,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 20,
+      "archive": 0
+    },
+    {
+      "id": 22,
+      "client": "ZIMMERMANN SS27",
+      "modele": "MEDIUM FLOWER NATUREL",
+      "qte_commande": 120.0,
+      "unite": "PCS",
+      "heure_pcs": null,
+      "heure_pcs_tbc": 1,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 21,
+      "archive": 0
+    },
+    {
+      "id": 23,
+      "client": "ZIMMERMANN SS27",
+      "modele": "MEDIUM SHELL NATUREL",
+      "qte_commande": 780.0,
+      "unite": "PCS",
+      "heure_pcs": null,
+      "heure_pcs_tbc": 1,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 22,
+      "archive": 0
+    },
+    {
+      "id": 24,
+      "client": "ZIMMERMANN SS27",
+      "modele": "SMALL SHELL NATUREL",
+      "qte_commande": 1020.0,
+      "unite": "PCS",
+      "heure_pcs": null,
+      "heure_pcs_tbc": 1,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 23,
+      "archive": 0
+    },
+    {
+      "id": 25,
+      "client": "ISABEL MARANT",
+      "modele": "BAYA NATUREL",
+      "qte_commande": 165.0,
+      "unite": "PCS",
+      "heure_pcs": 12.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 24,
+      "archive": 0
+    },
+    {
+      "id": 26,
+      "client": "ISABEL MARANT",
+      "modele": "BAYA STRIPE",
+      "qte_commande": 324.0,
+      "unite": "PCS",
+      "heure_pcs": 12.25,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 25,
+      "archive": 0
+    },
+    {
+      "id": 27,
+      "client": "ISABEL MARANT",
+      "modele": "MINI-BAYA NATUREL",
+      "qte_commande": 150.0,
+      "unite": "PCS",
+      "heure_pcs": 6.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 26,
+      "archive": 0
+    },
+    {
+      "id": 28,
+      "client": "ISABEL MARANT",
+      "modele": "MINI-BAYA STRIPE",
+      "qte_commande": 176.0,
+      "unite": "PCS",
+      "heure_pcs": 6.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 27,
+      "archive": 0
+    },
+    {
+      "id": 29,
+      "client": "ISABEL MARANT",
+      "modele": "PRAIA STRIPE",
+      "qte_commande": 434.0,
+      "unite": "PCS",
+      "heure_pcs": 18.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 28,
+      "archive": 0
+    },
+    {
+      "id": 30,
+      "client": "WESTWOOD",
+      "modele": "RAFFIA BUCKET YELLOW",
+      "qte_commande": 58.0,
+      "unite": "PCS",
+      "heure_pcs": 11.5,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 29,
+      "archive": 0
+    },
+    {
+      "id": 31,
+      "client": "WESTWOOD",
+      "modele": "RAFFIA BUCKET MINT",
+      "qte_commande": 25.0,
+      "unite": "PCS",
+      "heure_pcs": 11.5,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 30,
+      "archive": 0
+    },
+    {
+      "id": 32,
+      "client": "WESTWOOD",
+      "modele": "RAFFIA VISOR YELLOW",
+      "qte_commande": 16.0,
+      "unite": "PCS",
+      "heure_pcs": 5.5,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 31,
+      "archive": 0
+    },
+    {
+      "id": 33,
+      "client": "JACQUEMUS V1",
+      "modele": "PETIT CARRE NOIR",
+      "qte_commande": 250.0,
+      "unite": "PCS",
+      "heure_pcs": 10.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 32,
+      "archive": 0
+    },
+    {
+      "id": 34,
+      "client": "JACQUEMUS V1",
+      "modele": "PETIT ROND NATUREL",
+      "qte_commande": 250.0,
+      "unite": "PCS",
+      "heure_pcs": 9.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 33,
+      "archive": 0
+    },
+    {
+      "id": 35,
+      "client": "JACQUEMUS V2",
+      "modele": "PETIT CARRE NOIR ",
+      "qte_commande": 69.0,
+      "unite": "PCS",
+      "heure_pcs": 10.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 34,
+      "archive": 0
+    },
+    {
+      "id": 36,
+      "client": "JACQUEMUS V2",
+      "modele": "PETIT ROND NATUREL",
+      "qte_commande": 279.0,
+      "unite": "PCS",
+      "heure_pcs": 9.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 35,
+      "archive": 0
+    },
+    {
+      "id": 37,
+      "client": "JACQUEMUS V2",
+      "modele": "PETIT ROND NOIR ",
+      "qte_commande": 300.0,
+      "unite": "PCS",
+      "heure_pcs": 9.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 36,
+      "archive": 0
+    },
+    {
+      "id": 38,
+      "client": "JACQUEMUS V2",
+      "modele": "PETIT ROND ZEBRE",
+      "qte_commande": 150.0,
+      "unite": "PCS",
+      "heure_pcs": 11.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 37,
+      "archive": 0
+    },
+    {
+      "id": 39,
+      "client": "JACQUEMUS E27",
+      "modele": "PETIT ROND ZEBRE",
+      "qte_commande": 379.0,
+      "unite": "PCS",
+      "heure_pcs": 10.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 38,
+      "archive": 0
+    },
+    {
+      "id": 40,
+      "client": "JACQUEMUS E27",
+      "modele": "LE PETIT ROND SPIAGGIA BLACK",
+      "qte_commande": 416.0,
+      "unite": "PCS",
+      "heure_pcs": 9.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 39,
+      "archive": 0
+    },
+    {
+      "id": 41,
+      "client": "JACQUEMUS E27",
+      "modele": "LE PETIT ROND SPIAGGIA NATUREL",
+      "qte_commande": 459.0,
+      "unite": "PCS",
+      "heure_pcs": 9.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 40,
+      "archive": 0
+    },
+    {
+      "id": 42,
+      "client": "JACQUEMUS E27",
+      "modele": "LE SPIAGGIA CŒUR BLACK",
+      "qte_commande": 527.0,
+      "unite": "PCS",
+      "heure_pcs": 8.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 41,
+      "archive": 0
+    },
+    {
+      "id": 43,
+      "client": "JACQUEMUS E27",
+      "modele": "LE SPIAGGIA CŒUR RED ",
+      "qte_commande": 593.0,
+      "unite": "PCS",
+      "heure_pcs": 8.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 42,
+      "archive": 0
+    },
+    {
+      "id": 44,
+      "client": "JACQUEMUS E27",
+      "modele": "LE SPIAGGIA CŒUR PINK",
+      "qte_commande": 548.0,
+      "unite": "PCS",
+      "heure_pcs": 8.0,
+      "heure_pcs_tbc": 0,
+      "qte_finie": 0.0,
+      "date_limite_client": null,
+      "date_lancement": null,
+      "notes": null,
+      "ordre": 43,
+      "archive": 0
+    }
+  ],
+  "planning": [
+    {
+      "id": 1,
+      "commande_id": 1,
+      "semaine_id": 1,
+      "nb_pieces": 57.0,
+      "statut": "normal"
+    },
+    {
+      "id": 2,
+      "commande_id": 1,
+      "semaine_id": 2,
+      "nb_pieces": 3.0,
+      "statut": "normal"
+    },
+    {
+      "id": 3,
+      "commande_id": 1,
+      "semaine_id": 3,
+      "nb_pieces": 1.0,
+      "statut": "normal"
+    },
+    {
+      "id": 4,
+      "commande_id": 1,
+      "semaine_id": 6,
+      "nb_pieces": 283.0,
+      "statut": "normal"
+    },
+    {
+      "id": 5,
+      "commande_id": 2,
+      "semaine_id": 6,
+      "nb_pieces": 30.0,
+      "statut": "normal"
+    },
+    {
+      "id": 6,
+      "commande_id": 3,
+      "semaine_id": 6,
+      "nb_pieces": 222.0,
+      "statut": "normal"
+    },
+    {
+      "id": 7,
+      "commande_id": 4,
+      "semaine_id": 6,
+      "nb_pieces": 120.0,
+      "statut": "normal"
+    },
+    {
+      "id": 8,
+      "commande_id": 5,
+      "semaine_id": 6,
+      "nb_pieces": 410.0,
+      "statut": "normal"
+    },
+    {
+      "id": 9,
+      "commande_id": 6,
+      "semaine_id": 2,
+      "nb_pieces": 7.0,
+      "statut": "normal"
+    },
+    {
+      "id": 10,
+      "commande_id": 6,
+      "semaine_id": 3,
+      "nb_pieces": 1.0,
+      "statut": "normal"
+    },
+    {
+      "id": 11,
+      "commande_id": 6,
+      "semaine_id": 6,
+      "nb_pieces": 65.0,
+      "statut": "normal"
+    },
+    {
+      "id": 12,
+      "commande_id": 7,
+      "semaine_id": 6,
+      "nb_pieces": 80.0,
+      "statut": "normal"
+    },
+    {
+      "id": 13,
+      "commande_id": 8,
+      "semaine_id": 6,
+      "nb_pieces": 80.0,
+      "statut": "normal"
+    },
+    {
+      "id": 14,
+      "commande_id": 9,
+      "semaine_id": 6,
+      "nb_pieces": 330.0,
+      "statut": "normal"
+    },
+    {
+      "id": 15,
+      "commande_id": 10,
+      "semaine_id": 6,
+      "nb_pieces": 550.0,
+      "statut": "normal"
+    },
+    {
+      "id": 16,
+      "commande_id": 11,
+      "semaine_id": 6,
+      "nb_pieces": 100.0,
+      "statut": "normal"
+    },
+    {
+      "id": 17,
+      "commande_id": 12,
+      "semaine_id": 6,
+      "nb_pieces": 150.0,
+      "statut": "normal"
+    },
+    {
+      "id": 18,
+      "commande_id": 13,
+      "semaine_id": 4,
+      "nb_pieces": 120.0,
+      "statut": "normal"
+    },
+    {
+      "id": 19,
+      "commande_id": 13,
+      "semaine_id": 5,
+      "nb_pieces": 109.0,
+      "statut": "normal"
+    },
+    {
+      "id": 20,
+      "commande_id": 13,
+      "semaine_id": 6,
+      "nb_pieces": 271.0,
+      "statut": "normal"
+    },
+    {
+      "id": 21,
+      "commande_id": 14,
+      "semaine_id": 4,
+      "nb_pieces": 60.0,
+      "statut": "normal"
+    },
+    {
+      "id": 22,
+      "commande_id": 14,
+      "semaine_id": 6,
+      "nb_pieces": 60.0,
+      "statut": "normal"
+    },
+    {
+      "id": 23,
+      "commande_id": 15,
+      "semaine_id": 6,
+      "nb_pieces": 130.0,
+      "statut": "normal"
+    },
+    {
+      "id": 24,
+      "commande_id": 25,
+      "semaine_id": 6,
+      "nb_pieces": 41.0,
+      "statut": "normal"
+    },
+    {
+      "id": 25,
+      "commande_id": 25,
+      "semaine_id": 7,
+      "nb_pieces": 41.0,
+      "statut": "normal"
+    },
+    {
+      "id": 26,
+      "commande_id": 25,
+      "semaine_id": 8,
+      "nb_pieces": 42.0,
+      "statut": "normal"
+    },
+    {
+      "id": 27,
+      "commande_id": 25,
+      "semaine_id": 9,
+      "nb_pieces": 41.0,
+      "statut": "normal"
+    },
+    {
+      "id": 28,
+      "commande_id": 26,
+      "semaine_id": 6,
+      "nb_pieces": 81.0,
+      "statut": "normal"
+    },
+    {
+      "id": 29,
+      "commande_id": 26,
+      "semaine_id": 7,
+      "nb_pieces": 81.0,
+      "statut": "normal"
+    },
+    {
+      "id": 30,
+      "commande_id": 26,
+      "semaine_id": 8,
+      "nb_pieces": 81.0,
+      "statut": "normal"
+    },
+    {
+      "id": 31,
+      "commande_id": 26,
+      "semaine_id": 9,
+      "nb_pieces": 81.0,
+      "statut": "normal"
+    },
+    {
+      "id": 32,
+      "commande_id": 27,
+      "semaine_id": 6,
+      "nb_pieces": 37.0,
+      "statut": "normal"
+    },
+    {
+      "id": 33,
+      "commande_id": 27,
+      "semaine_id": 7,
+      "nb_pieces": 38.0,
+      "statut": "normal"
+    },
+    {
+      "id": 34,
+      "commande_id": 27,
+      "semaine_id": 8,
+      "nb_pieces": 38.0,
+      "statut": "normal"
+    },
+    {
+      "id": 35,
+      "commande_id": 27,
+      "semaine_id": 9,
+      "nb_pieces": 37.0,
+      "statut": "normal"
+    },
+    {
+      "id": 36,
+      "commande_id": 28,
+      "semaine_id": 6,
+      "nb_pieces": 44.0,
+      "statut": "normal"
+    },
+    {
+      "id": 37,
+      "commande_id": 28,
+      "semaine_id": 7,
+      "nb_pieces": 44.0,
+      "statut": "normal"
+    },
+    {
+      "id": 38,
+      "commande_id": 28,
+      "semaine_id": 8,
+      "nb_pieces": 44.0,
+      "statut": "normal"
+    },
+    {
+      "id": 39,
+      "commande_id": 28,
+      "semaine_id": 9,
+      "nb_pieces": 44.0,
+      "statut": "normal"
+    },
+    {
+      "id": 40,
+      "commande_id": 29,
+      "semaine_id": 6,
+      "nb_pieces": 108.0,
+      "statut": "normal"
+    },
+    {
+      "id": 41,
+      "commande_id": 29,
+      "semaine_id": 7,
+      "nb_pieces": 109.0,
+      "statut": "normal"
+    },
+    {
+      "id": 42,
+      "commande_id": 29,
+      "semaine_id": 8,
+      "nb_pieces": 109.0,
+      "statut": "normal"
+    },
+    {
+      "id": 43,
+      "commande_id": 29,
+      "semaine_id": 9,
+      "nb_pieces": 108.0,
+      "statut": "normal"
+    },
+    {
+      "id": 44,
+      "commande_id": 30,
+      "semaine_id": 6,
+      "nb_pieces": 14.0,
+      "statut": "normal"
+    },
+    {
+      "id": 45,
+      "commande_id": 30,
+      "semaine_id": 7,
+      "nb_pieces": 15.0,
+      "statut": "normal"
+    },
+    {
+      "id": 46,
+      "commande_id": 30,
+      "semaine_id": 8,
+      "nb_pieces": 15.0,
+      "statut": "normal"
+    },
+    {
+      "id": 47,
+      "commande_id": 30,
+      "semaine_id": 9,
+      "nb_pieces": 14.0,
+      "statut": "normal"
+    },
+    {
+      "id": 48,
+      "commande_id": 31,
+      "semaine_id": 6,
+      "nb_pieces": 6.0,
+      "statut": "normal"
+    },
+    {
+      "id": 49,
+      "commande_id": 31,
+      "semaine_id": 7,
+      "nb_pieces": 6.0,
+      "statut": "normal"
+    },
+    {
+      "id": 50,
+      "commande_id": 31,
+      "semaine_id": 8,
+      "nb_pieces": 7.0,
+      "statut": "normal"
+    },
+    {
+      "id": 51,
+      "commande_id": 31,
+      "semaine_id": 9,
+      "nb_pieces": 6.0,
+      "statut": "normal"
+    },
+    {
+      "id": 52,
+      "commande_id": 32,
+      "semaine_id": 6,
+      "nb_pieces": 4.0,
+      "statut": "normal"
+    },
+    {
+      "id": 53,
+      "commande_id": 32,
+      "semaine_id": 7,
+      "nb_pieces": 4.0,
+      "statut": "normal"
+    },
+    {
+      "id": 54,
+      "commande_id": 32,
+      "semaine_id": 8,
+      "nb_pieces": 4.0,
+      "statut": "normal"
+    },
+    {
+      "id": 55,
+      "commande_id": 32,
+      "semaine_id": 9,
+      "nb_pieces": 4.0,
+      "statut": "normal"
+    },
+    {
+      "id": 56,
+      "commande_id": 33,
+      "semaine_id": 6,
+      "nb_pieces": 63.0,
+      "statut": "normal"
+    },
+    {
+      "id": 57,
+      "commande_id": 33,
+      "semaine_id": 7,
+      "nb_pieces": 62.0,
+      "statut": "normal"
+    },
+    {
+      "id": 58,
+      "commande_id": 33,
+      "semaine_id": 8,
+      "nb_pieces": 62.0,
+      "statut": "normal"
+    },
+    {
+      "id": 59,
+      "commande_id": 33,
+      "semaine_id": 9,
+      "nb_pieces": 63.0,
+      "statut": "normal"
+    },
+    {
+      "id": 60,
+      "commande_id": 34,
+      "semaine_id": 6,
+      "nb_pieces": 60.0,
+      "statut": "normal"
+    },
+    {
+      "id": 61,
+      "commande_id": 34,
+      "semaine_id": 7,
+      "nb_pieces": 60.0,
+      "statut": "normal"
+    },
+    {
+      "id": 62,
+      "commande_id": 34,
+      "semaine_id": 8,
+      "nb_pieces": 65.0,
+      "statut": "normal"
+    },
+    {
+      "id": 63,
+      "commande_id": 34,
+      "semaine_id": 9,
+      "nb_pieces": 65.0,
+      "statut": "normal"
+    },
+    {
+      "id": 64,
+      "commande_id": 35,
+      "semaine_id": 6,
+      "nb_pieces": 17.0,
+      "statut": "normal"
+    },
+    {
+      "id": 65,
+      "commande_id": 35,
+      "semaine_id": 7,
+      "nb_pieces": 17.0,
+      "statut": "normal"
+    },
+    {
+      "id": 66,
+      "commande_id": 35,
+      "semaine_id": 8,
+      "nb_pieces": 17.0,
+      "statut": "normal"
+    },
+    {
+      "id": 67,
+      "commande_id": 35,
+      "semaine_id": 9,
+      "nb_pieces": 18.0,
+      "statut": "normal"
+    },
+    {
+      "id": 68,
+      "commande_id": 36,
+      "semaine_id": 6,
+      "nb_pieces": 69.0,
+      "statut": "normal"
+    },
+    {
+      "id": 69,
+      "commande_id": 36,
+      "semaine_id": 7,
+      "nb_pieces": 70.0,
+      "statut": "normal"
+    },
+    {
+      "id": 70,
+      "commande_id": 36,
+      "semaine_id": 8,
+      "nb_pieces": 70.0,
+      "statut": "normal"
+    },
+    {
+      "id": 71,
+      "commande_id": 36,
+      "semaine_id": 9,
+      "nb_pieces": 70.0,
+      "statut": "normal"
+    },
+    {
+      "id": 72,
+      "commande_id": 37,
+      "semaine_id": 6,
+      "nb_pieces": 75.0,
+      "statut": "normal"
+    },
+    {
+      "id": 73,
+      "commande_id": 37,
+      "semaine_id": 7,
+      "nb_pieces": 75.0,
+      "statut": "normal"
+    },
+    {
+      "id": 74,
+      "commande_id": 37,
+      "semaine_id": 8,
+      "nb_pieces": 75.0,
+      "statut": "normal"
+    },
+    {
+      "id": 75,
+      "commande_id": 37,
+      "semaine_id": 9,
+      "nb_pieces": 75.0,
+      "statut": "normal"
+    },
+    {
+      "id": 76,
+      "commande_id": 38,
+      "semaine_id": 6,
+      "nb_pieces": 38.0,
+      "statut": "normal"
+    },
+    {
+      "id": 77,
+      "commande_id": 38,
+      "semaine_id": 7,
+      "nb_pieces": 38.0,
+      "statut": "normal"
+    },
+    {
+      "id": 78,
+      "commande_id": 38,
+      "semaine_id": 8,
+      "nb_pieces": 37.0,
+      "statut": "normal"
+    },
+    {
+      "id": 79,
+      "commande_id": 38,
+      "semaine_id": 9,
+      "nb_pieces": 37.0,
+      "statut": "normal"
+    },
+    {
+      "id": 80,
+      "commande_id": 39,
+      "semaine_id": 9,
+      "nb_pieces": 95.0,
+      "statut": "normal"
+    },
+    {
+      "id": 81,
+      "commande_id": 39,
+      "semaine_id": 10,
+      "nb_pieces": 95.0,
+      "statut": "normal"
+    },
+    {
+      "id": 82,
+      "commande_id": 39,
+      "semaine_id": 11,
+      "nb_pieces": 95.0,
+      "statut": "normal"
+    },
+    {
+      "id": 83,
+      "commande_id": 39,
+      "semaine_id": 12,
+      "nb_pieces": 94.0,
+      "statut": "normal"
+    },
+    {
+      "id": 84,
+      "commande_id": 40,
+      "semaine_id": 9,
+      "nb_pieces": 104.0,
+      "statut": "normal"
+    },
+    {
+      "id": 85,
+      "commande_id": 40,
+      "semaine_id": 10,
+      "nb_pieces": 104.0,
+      "statut": "normal"
+    },
+    {
+      "id": 86,
+      "commande_id": 40,
+      "semaine_id": 11,
+      "nb_pieces": 104.0,
+      "statut": "normal"
+    },
+    {
+      "id": 87,
+      "commande_id": 40,
+      "semaine_id": 12,
+      "nb_pieces": 104.0,
+      "statut": "normal"
+    },
+    {
+      "id": 88,
+      "commande_id": 41,
+      "semaine_id": 9,
+      "nb_pieces": 115.0,
+      "statut": "normal"
+    },
+    {
+      "id": 89,
+      "commande_id": 41,
+      "semaine_id": 10,
+      "nb_pieces": 115.0,
+      "statut": "normal"
+    },
+    {
+      "id": 90,
+      "commande_id": 41,
+      "semaine_id": 11,
+      "nb_pieces": 114.0,
+      "statut": "normal"
+    },
+    {
+      "id": 91,
+      "commande_id": 41,
+      "semaine_id": 12,
+      "nb_pieces": 115.0,
+      "statut": "normal"
+    },
+    {
+      "id": 92,
+      "commande_id": 42,
+      "semaine_id": 9,
+      "nb_pieces": 131.0,
+      "statut": "normal"
+    },
+    {
+      "id": 93,
+      "commande_id": 42,
+      "semaine_id": 10,
+      "nb_pieces": 131.0,
+      "statut": "normal"
+    },
+    {
+      "id": 94,
+      "commande_id": 42,
+      "semaine_id": 11,
+      "nb_pieces": 132.0,
+      "statut": "normal"
+    },
+    {
+      "id": 95,
+      "commande_id": 42,
+      "semaine_id": 12,
+      "nb_pieces": 132.0,
+      "statut": "normal"
+    },
+    {
+      "id": 96,
+      "commande_id": 43,
+      "semaine_id": 9,
+      "nb_pieces": 149.0,
+      "statut": "normal"
+    },
+    {
+      "id": 97,
+      "commande_id": 43,
+      "semaine_id": 10,
+      "nb_pieces": 148.0,
+      "statut": "normal"
+    },
+    {
+      "id": 98,
+      "commande_id": 43,
+      "semaine_id": 11,
+      "nb_pieces": 148.0,
+      "statut": "normal"
+    },
+    {
+      "id": 99,
+      "commande_id": 43,
+      "semaine_id": 12,
+      "nb_pieces": 148.0,
+      "statut": "normal"
+    },
+    {
+      "id": 100,
+      "commande_id": 44,
+      "semaine_id": 9,
+      "nb_pieces": 137.0,
+      "statut": "normal"
+    },
+    {
+      "id": 101,
+      "commande_id": 44,
+      "semaine_id": 10,
+      "nb_pieces": 137.0,
+      "statut": "normal"
+    },
+    {
+      "id": 102,
+      "commande_id": 44,
+      "semaine_id": 11,
+      "nb_pieces": 137.0,
+      "statut": "normal"
+    },
+    {
+      "id": 103,
+      "commande_id": 44,
+      "semaine_id": 12,
+      "nb_pieces": 137.0,
+      "statut": "normal"
+    }
+  ]
+}
