@@ -5,8 +5,9 @@ import {
   MicroJobDayData,
   MicroDailyRow,
 } from '../../data/microPlanningTypes';
-import { matchStyleWithModel } from '../../utils/useMicroPlanning';
+import { matchStyleWithModel, rowsForJob } from '../../utils/useMicroPlanning';
 import { getModelColor, hexToRgba } from '../../utils/modelColorUtils';
+import { formatDay } from '../../utils/dateDisplay';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import {
   Layers,
@@ -155,6 +156,22 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
     return {};
   };
 
+  /**
+   * Totaux des sous-lots du suivi journalier pour un style de la frise, au jour courant.
+   * La frise reste saisie à la main (comme dans Excel) : ce calcul ne sert qu'à signaler
+   * un désaccord entre la case tapée et le détail des lots.
+   */
+  const pivotLotsTotal = (
+    job: MicroJob | undefined,
+    isPivot: boolean,
+    field: 'realPacking' | 'cumulPacking' | 'alimChaine' | 'cumulCoupe'
+  ) => {
+    if (!job || !isPivot) return null;
+    const matched = rowsForJob(job, rows);
+    if (matched.length === 0) return null;
+    return { count: matched.length, total: matched.reduce((acc, r) => acc + (r[field] || 0), 0) };
+  };
+
   const handleStartInlineEdit = (
     jobId: string,
     colIdx: number,
@@ -190,12 +207,18 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
   return (
     <div className="w-full select-none">
       <div className="overflow-x-auto w-full max-h-[68vh]">
-        <table className="w-full text-xs text-left border-collapse">
+        <table className="w-full text-xs text-left border-collapse table-fixed">
+          <colgroup>
+            <col className="w-[280px] min-w-[280px] max-w-[280px]" />
+            {displayedDays.map((d) => (
+              <col key={`col_excel_${d.colIdx}`} className="w-[124px] min-w-[124px] max-w-[136px]" />
+            ))}
+          </colgroup>
           {/* Sticky Header: Weeks & Days */}
-          <thead className="sticky top-0 z-20 shadow-xs">
+          <thead className="sticky top-0 z-30 shadow-xs">
             {/* LIGNE 1 : SEMAINES */}
             <tr className="bg-slate-900 text-white font-bold text-[10.5px] uppercase tracking-wider">
-              <th className="sticky left-0 z-30 bg-slate-950 py-2 px-3 border-r-2 border-slate-700 text-left min-w-[280px] w-[280px] max-w-[280px]">
+              <th className="sticky left-0 z-40 bg-slate-950 py-2 px-3 border-r-4 border-slate-700 shadow-[4px_0_10px_rgba(0,0,0,0.22)] text-left min-w-[280px] w-[280px] max-w-[280px]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-white font-extrabold text-[11px]">
                     <FileSpreadsheet className="w-3.5 h-3.5 text-slate-300" />
@@ -209,7 +232,8 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
 
               {displayedWeeks.map((weekCode) => {
                 const daysInWeek = weeksMap.get(weekCode) || [];
-                const hasToday = daysInWeek.some((d) => d.colIdx === currentColIdx);
+                const todayDay = daysInWeek.find((d) => d.colIdx === currentColIdx);
+                const hasToday = !!todayDay;
                 const hasPastDays = daysInWeek.some((d) => d.colIdx < currentColIdx);
                 const hasFutureDays = daysInWeek.some((d) => d.colIdx > currentColIdx);
 
@@ -229,7 +253,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                       <span className="text-xs font-black">{weekCode}</span>
                       {hasToday ? (
                         <span className="text-[9px] bg-slate-950 text-[#FFFF00] px-1.5 py-0.2 rounded font-sans uppercase font-black">
-                          ★ 12-10 ACTIVE
+                          ★ {formatDay(todayDay?.dateLabel)} actif
                         </span>
                       ) : null}
                     </div>
@@ -240,10 +264,10 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
 
             {/* LIGNE 2 : MÉTRIQUES + DATES */}
             <tr className="bg-slate-800 text-slate-200 font-bold text-[10px] uppercase border-b-2 border-slate-600">
-              <th className="sticky left-0 z-30 bg-slate-900 py-1.5 px-3 border-r-2 border-slate-600 text-left min-w-[280px] w-[280px] max-w-[280px] text-slate-200">
+              <th className="sticky left-0 z-40 bg-slate-900 py-1.5 px-3 border-r-4 border-slate-600 shadow-[4px_0_10px_rgba(0,0,0,0.22)] text-left min-w-[280px] w-[280px] max-w-[280px] text-slate-200">
                 <div className="flex items-center justify-between">
                   <span>MÉTRIQUE / RUBRIQUE</span>
-                  <span className="text-[9px] text-slate-400 lowercase font-normal">clic cell pour éditer</span>
+                  <span className="text-[9px] text-slate-400 font-normal">clic cell pour éditer</span>
                 </div>
               </th>
 
@@ -261,7 +285,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                         ? 'bg-slate-800/95 border-slate-700 text-slate-200'
                         : 'bg-slate-850 border-slate-700 text-slate-300'
                     }`}
-                    title={`${day.dayName} ${day.dateLabel} (${day.week})`}
+                    title={`${day.dayName} ${formatDay(day.dateLabel)} (${day.week})`}
                   >
                     <div className="flex items-center justify-between px-1 text-[9px] font-sans font-bold leading-none">
                       <span className={`uppercase ${isPivot ? 'text-slate-950 font-black' : 'text-slate-400'}`}>{day.dayName}</span>
@@ -271,7 +295,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                             isPivot ? 'text-slate-950 underline font-black' : ''
                           }`}
                         >
-                          {day.dateLabel}
+                          {formatDay(day.dateLabel)}
                         </span>
                         {isPivot && (
                           <span className="text-[7.5px] bg-slate-950 text-[#FFFF00] px-1 rounded font-sans font-extrabold">
@@ -323,7 +347,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
 
                   {/* ROW 1: CLIENT / BUYER */}
                   <tr className="bg-slate-50/80 hover:bg-slate-100/70 border-b border-slate-200 transition-colors">
-                    <td className="sticky left-0 z-10 bg-slate-100 py-1.5 px-3 border-r-2 border-slate-300 font-sans text-slate-700 text-[10.5px]">
+                    <td className="sticky left-0 z-30 bg-slate-100 py-1.5 px-3 border-r-4 border-slate-400 shadow-[4px_0_10px_rgba(0,0,0,0.22)] font-sans text-slate-700 text-[10.5px]">
                       <div className="flex items-center justify-between">
                         <span className="font-extrabold text-slate-800">CLIENT / BUYER</span>
                         <span className="text-[9px] text-slate-500 uppercase font-semibold">Donneur d'ordre</span>
@@ -347,7 +371,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
 
                   {/* ROW 2: REF / STYLE (Clickable for 360 Health Sheet) */}
                   <tr className="bg-white hover:bg-slate-50 border-b border-slate-200 transition-colors">
-                    <td className="sticky left-0 z-10 bg-white py-2 px-3 border-r-2 border-slate-300 font-sans text-slate-900 text-[11px] shadow-xs">
+                    <td className="sticky left-0 z-30 bg-white py-2 px-3 border-r-4 border-slate-400 shadow-[4px_0_10px_rgba(0,0,0,0.22)] font-sans text-slate-900 text-[11px] shadow-xs">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           <span className="font-black text-slate-900">REF / STYLE</span>
@@ -413,7 +437,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
 
                   {/* ROW 3: QTE / QTY (Total OF pcs) */}
                   <tr className="bg-slate-50/60 hover:bg-slate-100/60 border-b border-slate-200 transition-colors">
-                    <td className="sticky left-0 z-10 bg-slate-100 py-1 px-3 border-r-2 border-slate-300 font-sans text-slate-700 text-[10px]">
+                    <td className="sticky left-0 z-30 bg-slate-100 py-1 px-3 border-r-4 border-slate-400 shadow-[4px_0_10px_rgba(0,0,0,0.22)] font-sans text-slate-700 text-[10px]">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-slate-800">QTE / QTY</span>
                         <span className="text-[9px] text-slate-500 uppercase font-medium">Taille lot OF</span>
@@ -437,7 +461,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
 
                   {/* ROW 4: OBJ/J / TARGET (Cadence journalière - In-Cell Edit & Variable Target Detection) */}
                   <tr className="bg-white hover:bg-slate-50 border-b border-slate-200 transition-colors">
-                    <td className="sticky left-0 z-10 bg-slate-100 py-1.5 px-3 border-r-2 border-slate-300 font-sans text-slate-900 text-[10px]">
+                    <td className="sticky left-0 z-30 bg-white py-1.5 px-3 border-r-4 border-slate-400 shadow-[4px_0_10px_rgba(0,0,0,0.22)] font-sans text-slate-900 text-[10px]">
                       <div className="flex items-center justify-between">
                         <span className="font-extrabold text-slate-900">OBJ/J / TARGET</span>
                         <span className="text-[8.5px] bg-slate-200 text-slate-900 px-1 rounded font-bold uppercase">
@@ -496,7 +520,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                                       jobId: activeJob.id,
                                       modelName: activeJob.style,
                                       colIdx: day.colIdx,
-                                      dateLabel: day.dateLabel,
+                                      dateLabel: formatDay(day.dateLabel),
                                       week: day.week,
                                       coupe: dayData?.coupe || 0,
                                       alim: dayData?.alim || 0,
@@ -532,7 +556,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
 
                   {/* ROW 5: REAL PACK / Achieved qty (Pièces emballées du jour - JAUNE pour date du jour) */}
                   <tr className="bg-slate-50 hover:bg-slate-100 border-b border-slate-200 transition-colors">
-                    <td className="sticky left-0 z-10 bg-slate-100 py-1.5 px-3 border-r-2 border-slate-300 font-sans text-slate-950 text-[10px]">
+                    <td className="sticky left-0 z-30 bg-slate-100 py-1.5 px-3 border-r-4 border-slate-400 shadow-[4px_0_10px_rgba(0,0,0,0.22)] font-sans text-slate-950 text-[10px]">
                       <div className="flex items-center justify-between">
                         <span className="font-black text-slate-950">REAL PACK / Achieved qty</span>
                         <span className="text-[8.5px] bg-slate-200 text-slate-800 px-1 rounded font-bold uppercase border border-slate-300">
@@ -543,19 +567,11 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                     {displayedDays.map((day) => {
                       const { job: activeJob, dayData } = getActiveJobForChainAndDay(chainJobs, day.colIdx);
                       const isPivot = day.colIdx === currentColIdx;
-                      let realVal = dayData?.real || 0;
-
-                      // Match with operational table on pivot date
-                      if (isPivot && activeJob) {
-                        const matchingRows = rows.filter(
-                          (r) =>
-                            r.chaine.toLowerCase().includes(chainName.toLowerCase().split(' ')[0].toLowerCase()) &&
-                            matchStyleWithModel(activeJob.style, r.modele, r.chaine)
-                        );
-                        if (matchingRows.length > 0) {
-                          realVal = matchingRows.reduce((acc, curr) => acc + (curr.realPacking || 0), 0);
-                        }
-                      }
+                      // La case du jour courant reste une saisie manuelle, comme dans la SIMULATION
+                      // d'Excel ; la somme des lots du journalier ne sert que de contrôle affiché.
+                      const lots = pivotLotsTotal(activeJob, isPivot, 'realPacking');
+                      const realVal = dayData?.real || 0;
+                      const ecartReal = !!lots && lots.total !== realVal;
 
                       const isEditingReal =
                         inlineEdit?.jobId === activeJob?.id &&
@@ -594,7 +610,11 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                                     ? 'font-black text-slate-950 bg-slate-200 hover:bg-slate-300 text-[11px]'
                                     : 'text-slate-400 hover:bg-slate-100 text-[10px]'
                                 }`}
-                                title={`REAL PACK : ${realVal || 0} pcs (cliquer pour éditer)`}
+                                title={
+                                  ecartReal
+                                    ? `REAL PACK du ${formatDay(day.dateLabel)} : ${realVal} pcs saisis ici. Le suivi journalier totalise ${lots.total} pcs sur ${lots.count} sous-lots (cliquer pour éditer).`
+                                    : `REAL PACK : ${realVal || 0} pcs (cliquer pour éditer)`
+                                }
                               >
                                 {realVal > 0 ? realVal : (day.colIdx > currentColIdx ? '—' : 0)}
                               </div>
@@ -609,7 +629,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
 
                   {/* ROW 6: CUMUL PACK / Cumulative qty (Cumul emballage à date) */}
                   <tr className="bg-white hover:bg-slate-50 border-b border-slate-200 transition-colors">
-                    <td className="sticky left-0 z-10 bg-slate-100 py-1.5 px-3 border-r-2 border-slate-300 font-sans text-slate-950 text-[10px]">
+                    <td className="sticky left-0 z-30 bg-white py-1.5 px-3 border-r-4 border-slate-400 shadow-[4px_0_10px_rgba(0,0,0,0.22)] font-sans text-slate-950 text-[10px]">
                       <div className="flex items-center justify-between">
                         <span className="font-black text-slate-950">CUMUL PACK / Cumulative qty</span>
                         <span className="text-[8.5px] bg-slate-200 text-slate-950 px-1 rounded font-black uppercase">
@@ -620,18 +640,9 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                     {displayedDays.map((day) => {
                       const { job: activeJob, dayData } = getActiveJobForChainAndDay(chainJobs, day.colIdx);
                       const isPivot = day.colIdx === currentColIdx;
-                      let cumulVal = dayData?.cumul || 0;
-
-                      if (isPivot && activeJob) {
-                        const matchingRows = rows.filter(
-                          (r) =>
-                            r.chaine.toLowerCase().includes(chainName.toLowerCase().split(' ')[0].toLowerCase()) &&
-                            matchStyleWithModel(activeJob.style, r.modele, r.chaine)
-                        );
-                        if (matchingRows.length > 0) {
-                          cumulVal = matchingRows.reduce((acc, curr) => acc + (curr.cumulPacking || 0), 0);
-                        }
-                      }
+                      const lots = pivotLotsTotal(activeJob, isPivot, 'cumulPacking');
+                      const cumulVal = dayData?.cumul || 0;
+                      const ecartCumul = !!lots && lots.total !== cumulVal;
 
                       const isEditingCumul =
                         inlineEdit?.jobId === activeJob?.id &&
@@ -668,7 +679,11 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                                     ? 'font-black text-slate-950 bg-slate-100 hover:bg-slate-200 text-[11px]'
                                     : 'text-slate-400 hover:bg-slate-50 text-[10px]'
                                 }`}
-                                title={`CUMUL PACK : ${cumulVal || 0} pcs (cliquer pour éditer)`}
+                                title={
+                                  ecartCumul
+                                    ? `CUMUL PACK du ${formatDay(day.dateLabel)} : ${cumulVal} pcs saisis ici. Le suivi journalier totalise ${lots.total} pcs sur ${lots.count} sous-lots (cliquer pour éditer).`
+                                    : `CUMUL PACK : ${cumulVal || 0} pcs (cliquer pour éditer). C(n) = cumul de la veille + REAL PACK du jour n'est appliqué qu'aux cases encore vides.`
+                                }
                               >
                                 {cumulVal > 0 ? cumulVal : (day.colIdx > currentColIdx ? '—' : 0)}
                               </div>
@@ -681,9 +696,48 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                     })}
                   </tr>
 
+                  {/* ROW 6bis: RESTE À FAIRE (calculé : Quantité OF - cumul de la veille) */}
+                  <tr className="bg-indigo-50/60 hover:bg-indigo-100/60 border-b border-slate-200 transition-colors">
+                    <td className="sticky left-0 z-30 bg-indigo-100 py-1.5 px-3 border-r-4 border-slate-400 shadow-[4px_0_10px_rgba(0,0,0,0.22)] font-sans text-[10px]">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-indigo-900">RESTE À FAIRE</span>
+                        <span className="text-[8.5px] bg-indigo-200 text-indigo-900 px-1 rounded font-bold uppercase">
+                          OF − C(n-1)
+                        </span>
+                      </div>
+                    </td>
+                    {displayedDays.map((day) => {
+                      const { job: activeJob, dayData } = getActiveJobForChainAndDay(chainJobs, day.colIdx);
+                      const isPivot = day.colIdx === currentColIdx;
+                      const resteVal = dayData?.reste;
+
+                      return (
+                        <td
+                          key={`reste_${chainName}_${day.colIdx}`}
+                          className={`py-1 px-1 text-center font-mono border-r border-slate-200 ${
+                            isPivot ? 'bg-[#FFFF00]/40' : ''
+                          }`}
+                        >
+                          {activeJob && resteVal !== undefined ? (
+                            <span
+                              className={`text-[11px] font-black ${
+                                resteVal === 0 ? 'text-emerald-700' : 'text-indigo-900'
+                              }`}
+                              title={`RESTE À FAIRE (calculé) : ${resteVal} pcs à l'entame du ${formatDay(day.dateLabel)}`}
+                            >
+                              {resteVal}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 text-[10px]">—</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+
                   {/* ROW 7: ALIMENTATION / cutting qty available */}
                   <tr className="bg-slate-50 hover:bg-slate-100 border-b border-slate-200 transition-colors">
-                    <td className="sticky left-0 z-10 bg-slate-100 py-1.5 px-3 border-r-2 border-slate-300 font-sans text-slate-900 text-[10px]">
+                    <td className="sticky left-0 z-30 bg-slate-100 py-1.5 px-3 border-r-4 border-slate-400 shadow-[4px_0_10px_rgba(0,0,0,0.22)] font-sans text-slate-900 text-[10px]">
                       <div className="flex items-center justify-between">
                         <span className="font-extrabold text-slate-900">ALIMENTATION / cutting qty</span>
                         <span className="text-[8.5px] bg-slate-200 text-slate-900 px-1 rounded font-bold uppercase">
@@ -694,18 +748,9 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                     {displayedDays.map((day) => {
                       const { job: activeJob, dayData } = getActiveJobForChainAndDay(chainJobs, day.colIdx);
                       const isPivot = day.colIdx === currentColIdx;
-                      let alimVal = dayData?.alim || 0;
-
-                      if (isPivot && activeJob) {
-                        const matchingRows = rows.filter(
-                          (r) =>
-                            r.chaine.toLowerCase().includes(chainName.toLowerCase().split(' ')[0].toLowerCase()) &&
-                            matchStyleWithModel(activeJob.style, r.modele, r.chaine)
-                        );
-                        if (matchingRows.length > 0) {
-                          alimVal = matchingRows.reduce((acc, curr) => acc + (curr.alimChaine || 0), 0);
-                        }
-                      }
+                      const lots = pivotLotsTotal(activeJob, isPivot, 'alimChaine');
+                      const alimVal = dayData?.alim || 0;
+                      const ecartAlim = !!lots && lots.total !== alimVal;
 
                       const isEditingAlim =
                         inlineEdit?.jobId === activeJob?.id &&
@@ -742,7 +787,11 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                                     ? 'font-bold text-slate-950 bg-slate-100 hover:bg-slate-200 text-[10.5px]'
                                     : 'text-slate-400 hover:bg-slate-50 text-[10px]'
                                 }`}
-                                title={`ALIMENTATION : ${alimVal || 0} pcs (cliquer pour éditer)`}
+                                title={
+                                  ecartAlim
+                                    ? `ALIMENTATION du ${formatDay(day.dateLabel)} : ${alimVal} pcs saisis ici. Le suivi journalier totalise ${lots.total} pcs sur ${lots.count} sous-lots (cliquer pour éditer).`
+                                    : `ALIMENTATION : ${alimVal || 0} pcs (cliquer pour éditer)`
+                                }
                               >
                                 {alimVal > 0 ? alimVal : (day.colIdx > currentColIdx ? '—' : 0)}
                               </div>
@@ -757,7 +806,7 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
 
                   {/* ROW 8: CUMUL COUPE / Cumulative cutting qty */}
                   <tr className="bg-white hover:bg-slate-50 border-b-2 border-slate-400 transition-colors">
-                    <td className="sticky left-0 z-10 bg-slate-100 py-1.5 px-3 border-r-2 border-slate-300 font-sans text-slate-900 text-[10px]">
+                    <td className="sticky left-0 z-30 bg-white py-1.5 px-3 border-r-4 border-slate-400 shadow-[4px_0_10px_rgba(0,0,0,0.22)] font-sans text-slate-900 text-[10px]">
                       <div className="flex items-center justify-between">
                         <span className="font-extrabold text-slate-900">CUMUL COUPE / Cumulative qty</span>
                         <span className="text-[8.5px] bg-slate-200 text-slate-900 px-1 rounded font-bold uppercase">
@@ -768,18 +817,9 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                     {displayedDays.map((day) => {
                       const { job: activeJob, dayData } = getActiveJobForChainAndDay(chainJobs, day.colIdx);
                       const isPivot = day.colIdx === currentColIdx;
-                      let coupeVal = dayData?.coupe || 0;
-
-                      if (isPivot && activeJob) {
-                        const matchingRows = rows.filter(
-                          (r) =>
-                            r.chaine.toLowerCase().includes(chainName.toLowerCase().split(' ')[0].toLowerCase()) &&
-                            matchStyleWithModel(activeJob.style, r.modele, r.chaine)
-                        );
-                        if (matchingRows.length > 0) {
-                          coupeVal = matchingRows.reduce((acc, curr) => acc + (curr.cumulCoupe || 0), 0);
-                        }
-                      }
+                      const lots = pivotLotsTotal(activeJob, isPivot, 'cumulCoupe');
+                      const coupeVal = dayData?.coupe || 0;
+                      const ecartCoupe = !!lots && lots.total !== coupeVal;
 
                       const isEditingCoupe =
                         inlineEdit?.jobId === activeJob?.id &&
@@ -816,7 +856,11 @@ export const TableauMicroSimulationExcel: React.FC<TableauMicroSimulationExcelPr
                                     ? 'font-bold text-slate-950 bg-slate-100 hover:bg-slate-200 text-[10.5px]'
                                     : 'text-slate-400 hover:bg-slate-50 text-[10px]'
                                 }`}
-                                title={`CUMUL COUPE : ${coupeVal || 0} pcs (cliquer pour éditer)`}
+                                title={
+                                  ecartCoupe
+                                    ? `CUMUL COUPE du ${formatDay(day.dateLabel)} : ${coupeVal} pcs saisis ici. Le suivi journalier totalise ${lots.total} pcs sur ${lots.count} sous-lots (cliquer pour éditer).`
+                                    : `CUMUL COUPE : ${coupeVal || 0} pcs (cliquer pour éditer)`
+                                }
                               >
                                 {coupeVal > 0 ? coupeVal : (day.colIdx > currentColIdx ? '—' : 0)}
                               </div>

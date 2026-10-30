@@ -79,13 +79,14 @@ export function exportMicroPlanningToXLSX(data: MicroPlanningData, filename?: st
   });
 
   chainMap.forEach((jobs, chain) => {
-    // 8 rows per chain block
+    // 9 rows per chain block
     const rClient: (string | number | null)[] = ['SITE 1', chain, 'CLIENT / BUYER'];
     const rStyle: (string | number | null)[] = [null, null, 'REF / STYLE'];
     const rQty: (string | number | null)[] = [null, null, 'QTE / QTY'];
     const rObj: (string | number | null)[] = [null, null, 'OBJ/J / TARGET'];
     const rReal: (string | number | null)[] = [null, null, 'REAL PACK / Achieved qty '];
     const rCumul: (string | number | null)[] = [null, null, 'CUMUL PACK / Cumulative qty '];
+    const rReste: (string | number | null)[] = [null, null, 'RESTE A FAIRE / Remaining qty'];
     const rAlim: (string | number | null)[] = [null, null, 'ALIMENTATION  / cutting qty available'];
     const rCoupe: (string | number | null)[] = [null, null, 'CUMUL COUPE / Cumulative cutting qty'];
 
@@ -100,6 +101,7 @@ export function exportMicroPlanningToXLSX(data: MicroPlanningData, filename?: st
         rObj.push(job.objJour ? `${job.objJour}pcs` : null);
         rReal.push(jData?.real ?? null);
         rCumul.push(jData?.cumul ?? null);
+        rReste.push(jData?.reste ?? null);
         rAlim.push(null);
         rCoupe.push(null);
       } else {
@@ -109,12 +111,13 @@ export function exportMicroPlanningToXLSX(data: MicroPlanningData, filename?: st
         rObj.push(null);
         rReal.push(null);
         rCumul.push(null);
+        rReste.push(null);
         rAlim.push(null);
         rCoupe.push(null);
       }
     });
 
-    wsSimData.push(rClient, rStyle, rQty, rObj, rReal, rCumul, rAlim, rCoupe);
+    wsSimData.push(rClient, rStyle, rQty, rObj, rReal, rCumul, rReste, rAlim, rCoupe);
   });
 
   const wsSim = XLSX.utils.aoa_to_sheet(wsSimData);

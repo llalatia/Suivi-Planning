@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Semaine, Commande, PlanningCell } from '../data/initialData';
 import { SemaineCalculated, nbHeures, nbBrodeuses } from '../utils/macroLogic';
+import { formatDay, formatWeekCaption, isoWeekEnd } from '../utils/dateDisplay';
 import {
   Calendar,
   Star,
@@ -111,7 +112,7 @@ export const TabVueSemaine: React.FC<TabVueSemaineProps> = ({
             >
               {semaines.map((s) => (
                 <option key={s.id} value={s.code}>
-                  {s.code} — {s.date_debut} {s.code === currentSemaineCode ? '(Courante)' : ''}
+                  {formatWeekCaption(s.code, s.date_label || s.date_debut, isoWeekEnd(s.date_debut), s.code === currentSemaineCode)}
                 </option>
               ))}
             </select>
@@ -316,7 +317,7 @@ export const TabVueSemaine: React.FC<TabVueSemaineProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-amber-400 font-mono">
               TOTAUX {activeSemaine.code}
             </span>
-            <span className="text-xs text-slate-400">({activeSemaine.date_debut})</span>
+            <span className="text-xs text-slate-400">({formatDay(activeSemaine.date_debut)})</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-6 font-mono text-xs">

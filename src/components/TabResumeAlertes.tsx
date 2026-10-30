@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SemaineCalculated, CommandeCalculated } from '../utils/macroLogic';
+import { formatDay } from '../utils/dateDisplay';
 import {
   AlertTriangle,
   Clock,
@@ -236,7 +237,7 @@ export const TabResumeAlertes: React.FC<TabResumeAlertesProps> = ({
                         </td>
 
                         <td className="py-2.5 px-4 text-center text-slate-600 border-r border-slate-100">
-                          {s.date_debut}
+                          {formatDay(s.date_debut)}
                         </td>
 
                         <td className="py-2.5 px-4 text-right text-slate-900 font-bold border-r border-slate-100">

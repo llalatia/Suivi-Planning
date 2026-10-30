@@ -12,9 +12,9 @@ import {
   CALENDAR_52_WEEKS,
   CALENDAR_QUARTERS,
   CALENDAR_MONTHS,
-  getCalendarWeek,
   getCurrentCalendarWeekCode,
 } from '../utils/calendarUtils';
+import { formatDay, formatFullDate, formatWeekCaption, isoWeekEnd } from '../utils/dateDisplay';
 import {
   Search,
   Plus,
@@ -35,6 +35,7 @@ import {
   AlertCircle,
   FileSpreadsheet,
   Check,
+  ArrowRight,
 } from 'lucide-react';
 
 export type MacroViewMode = 'panoramic' | 'identification_only' | 'compact_frise';
@@ -149,6 +150,29 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
     });
   }, [commandes, clientFilter, searchTerm]);
 
+  // Dénombrement Sa (Lancement) et Sb (Limite client) par semaine pour la frise
+  const saCountByWeek = useMemo(() => {
+    const map = new Map<string, number>();
+    commandes.forEach((c) => {
+      if (c.saCode) {
+        const k = c.saCode.toUpperCase().trim();
+        map.set(k, (map.get(k) || 0) + 1);
+      }
+    });
+    return map;
+  }, [commandes]);
+
+  const sbCountByWeek = useMemo(() => {
+    const map = new Map<string, number>();
+    commandes.forEach((c) => {
+      if (c.sbCode) {
+        const k = c.sbCode.toUpperCase().trim();
+        map.set(k, (map.get(k) || 0) + 1);
+      }
+    });
+    return map;
+  }, [commandes]);
+
   // Filtrage des 52 semaines affichées sur la frise
   const visibleSemaines = useMemo(() => {
     const currentIdx = semaines.findIndex((s) => s.code === currentSemaineCode);
@@ -180,7 +204,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
     ) as HTMLElement | null;
     if (targetEl) {
       const container = tableContainerRef.current;
-      const stickyOffset = viewMode === 'compact_frise' ? 262 : 817;
+      const stickyOffset = viewMode === 'compact_frise' ? 262 : 857;
       const scrollLeft = Math.max(0, targetEl.offsetLeft - stickyOffset);
       container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
     }
@@ -351,13 +375,13 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
   // Couleur de fond d'une cellule CLIENT / MODELE (selon l'état de la commande ou son row_color)
   const getRowLabelStyle = (cmd: CommandeCalculated) => {
     if (cmd.isCompletedOnTime || cmd.row_color === 'termine' || cmd.resteAFaire <= 0) {
-      return 'bg-emerald-50 text-emerald-950 font-bold'; // Vert : Commande soldée
+      return 'bg-emerald-100 text-emerald-950 font-bold'; // Vert : Commande soldée (opaque)
     }
     if (cmd.row_color === 'sst') {
-      return 'bg-slate-200 text-slate-900 font-semibold'; // Gris : SST
+      return 'bg-slate-200 text-slate-900 font-semibold'; // Gris : SST (opaque)
     }
     if (cmd.isGlissement || cmd.row_color === 'glissement') {
-      return 'bg-amber-50/70 text-slate-950 font-semibold border-l-4 border-l-amber-500'; // Glissement vs Planning
+      return 'bg-amber-100 text-slate-950 font-semibold border-l-4 border-l-amber-500'; // Glissement vs Planning (opaque)
     }
     return 'bg-white text-slate-900';
   };
@@ -368,7 +392,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
   const resolveEffectiveWeekCellState = (
     cmd: CommandeCalculated,
     weekIdx: number,
-    cell: PlanningCell | undefined
+    cell: PlanningCell | undefined,
+    semCode?: string
   ): {
     effectiveStatut: CellStatut;
     isLaunchWeek: boolean;
@@ -377,8 +402,15 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
     isNewGlissementDeadline: boolean;
     isCompletedGreenSpan: boolean;
   } => {
-    const isLaunchWeek = cmd.saIdx >= 0 && weekIdx === cmd.saIdx;
-    const isInitialDeadlineWeek = cmd.sbIdx >= 0 && weekIdx === cmd.sbIdx;
+    const isLaunchWeek =
+      (semCode && cmd.saCode ? semCode.toUpperCase().trim() === cmd.saCode.toUpperCase().trim() : false) ||
+      cell?.statut === 'lancement' ||
+      (cmd.saIdx >= 0 && weekIdx === cmd.saIdx);
+
+    const isInitialDeadlineWeek =
+      (semCode && cmd.sbCode ? semCode.toUpperCase().trim() === cmd.sbCode.toUpperCase().trim() : false) ||
+      cell?.statut === 'limite_client' ||
+      (cmd.sbIdx >= 0 && weekIdx === cmd.sbIdx);
     const isGlissementWindow =
       cmd.isGlissement &&
       cmd.glissementStartIdx >= 0 &&
@@ -438,9 +470,6 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                   Semaine active : {currentSemaineCode}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Vue cloisonnée &amp; lucide : Dossier Commandes ancré à gauche · Calendrier des Semaines défilant à droite
-              </p>
             </div>
           </div>
 
@@ -644,93 +673,6 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                 T4 (S40-S52)
               </button>
               <button
-                onClick={() => setWeekRangeFilter('FROM_CURRENT')}
-                className={`px-2 py-1 rounded font-medium transition cursor-pointer ${
-                  weekRangeFilter === 'FROM_CURRENT'
-                    ? 'bg-amber-500 text-slate-950 shadow-xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title={`Afficher dès la semaine active (${currentSemaineCode}) jusqu'à S52`}
-              >
-                Dès {currentSemaineCode}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Droite : Saut Rapide + Synchronisation Calendrier + Pinceau Couleurs + Nouvelle Commande */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Saut rapide sur la frise & Sélecteur direct 52 semaines */}
-          {viewMode !== 'identification_only' && (
-            <div className="flex items-center flex-wrap gap-1 text-xs bg-slate-50 border border-slate-300 rounded px-2 py-1">
-              <span className="text-slate-500 font-medium mr-0.5">Aller à :</span>
-              <button
-                onClick={() => scrollToWeek('S01')}
-                className="px-1.5 py-0.5 rounded hover:bg-slate-200 text-slate-700 font-mono font-semibold cursor-pointer"
-                title="Début d'année (S01)"
-              >
-                |◀ S01
-              </button>
-              <button
-                onClick={() => scrollToWeek('S14')}
-                className="px-1 py-0.5 rounded hover:bg-slate-200 text-slate-700 font-mono text-[11px] cursor-pointer"
-                title="Trimestre 2 (S14)"
-              >
-                T2
-              </button>
-              <button
-                onClick={() => scrollToWeek('S27')}
-                className="px-1 py-0.5 rounded hover:bg-slate-200 text-slate-700 font-mono text-[11px] cursor-pointer"
-                title="Trimestre 3 (S27)"
-              >
-                T3
-              </button>
-              <button
-                onClick={() => scrollToWeek('S40')}
-                className="px-1 py-0.5 rounded hover:bg-slate-200 text-slate-700 font-mono text-[11px] cursor-pointer"
-                title="Trimestre 4 (S40)"
-              >
-                T4
-              </button>
-              <button
-                onClick={() => scrollToWeek(currentSemaineCode)}
-                className="px-2 py-0.5 rounded bg-[#FFFF00] border border-amber-400 text-slate-950 font-mono font-bold shadow-2xs cursor-pointer"
-                title={`Semaine en cours (${currentSemaineCode})`}
-              >
-                ★ {currentSemaineCode}
-              </button>
-              <button
-                onClick={() => scrollToWeek('S52')}
-                className="px-1.5 py-0.5 rounded hover:bg-slate-200 text-slate-700 font-mono font-semibold cursor-pointer"
-                title="Fin d'année (S52)"
-              >
-                S52 ▶|
-              </button>
-
-              {/* Sélecteur direct S01..S52 */}
-              <div className="h-4 w-px bg-slate-300 mx-1" />
-              <select
-                value={currentSemaineCode}
-                onChange={(e) => {
-                  onSetCurrentSemaine(e.target.value);
-                  scrollToWeek(e.target.value);
-                  onShowToast(`Semaine active définie sur : ${e.target.value}`);
-                }}
-                className="bg-white text-slate-800 text-[11px] font-mono border border-slate-300 rounded px-1.5 py-0.5 cursor-pointer focus:outline-none focus:border-indigo-600"
-                title="Sélectionner n'importe quelle semaine du calendrier 52 semaines"
-              >
-                {semaines.map((s) => {
-                  const cal = getCalendarWeek(s.code);
-                  return (
-                    <option key={`nav_${s.code}`} value={s.code}>
-                      {s.code} {cal ? `(${cal.date_label} · ${cal.mois_short})` : ''}
-                    </option>
-                  );
-                })}
-              </select>
-
-              {/* Bouton de Synchronisation Calendrier Réel */}
-              <button
                 onClick={() => {
                   const realCode = getCurrentCalendarWeekCode();
                   onSetCurrentSemaine(realCode);
@@ -745,7 +687,10 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
               </button>
             </div>
           )}
+        </div>
 
+        {/* Droite : Pinceau Couleurs + Nouvelle Commande */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* Pinceau de statut officiel Excel */}
           <div className="flex items-center flex-wrap gap-1 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs">
             <Paintbrush className="w-3.5 h-3.5 text-slate-500 mr-0.5" />
@@ -887,7 +832,6 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                   <th className="py-2 px-2 text-right border-r border-slate-300 bg-emerald-50">QTÉ FINIE</th>
                   <th className="py-2 px-2 text-right border-r border-slate-300 bg-amber-50">RESTE À FAIRE</th>
                   <th className="py-2 px-2 text-center border-r border-slate-300 bg-indigo-50">BROD. DISPO</th>
-                  <th className="py-2 px-2 text-right border-r border-slate-300">PIÈCES PROG.</th>
                   <th className="py-2 px-2 text-center border-r border-slate-300">LANCEMENT (Sa)</th>
                   <th className="py-2 px-2 text-center border-r border-slate-300">LIMITE (Sb)</th>
                   <th className="py-2 px-3 border-r border-slate-300">PROGRESSION</th>
@@ -1012,9 +956,6 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                           <span className="text-[10px] text-indigo-500 hover:underline">+ Saisir B</span>
                         )}
                       </td>
-                      <td className="py-1.5 px-2 text-right font-mono font-bold border-r border-slate-300">
-                        {cmd.totalProgramme}
-                      </td>
                       <td className="py-1.5 px-2 text-center font-mono font-bold border-r border-slate-300">
                         <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
                           {cmd.saCode || '-'}
@@ -1095,20 +1036,51 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
           className="bg-white border border-slate-400 rounded-lg shadow-sm overflow-auto max-h-[calc(100vh-145px)] relative select-none"
         >
           <table className="border-collapse text-[11px] font-sans w-max min-w-full table-fixed">
+            {/* STRICT COLUMN WIDTH DEFINITIONS TO PREVENT ANY OVERLAP OR SHIFT */}
+            <colgroup>
+              {viewMode === 'compact_frise' ? (
+                <>
+                  <col style={{ width: '38px', minWidth: '38px', maxWidth: '38px' }} />
+                  <col style={{ width: '160px', minWidth: '160px', maxWidth: '160px' }} />
+                  <col style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }} />
+                </>
+              ) : (
+                <>
+                  <col style={{ width: '38px', minWidth: '38px', maxWidth: '38px' }} />
+                  <col style={{ width: '135px', minWidth: '135px', maxWidth: '135px' }} />
+                  <col style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }} />
+                  <col style={{ width: '70px', minWidth: '70px', maxWidth: '70px' }} />
+                  <col style={{ width: '44px', minWidth: '44px', maxWidth: '44px' }} />
+                  <col style={{ width: '60px', minWidth: '60px', maxWidth: '60px' }} />
+                  <col style={{ width: '56px', minWidth: '56px', maxWidth: '56px' }} />
+                  <col style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }} />
+                  <col style={{ width: '66px', minWidth: '66px', maxWidth: '66px' }} />
+                  <col style={{ width: '62px', minWidth: '62px', maxWidth: '62px' }} />
+                  <col style={{ width: '62px', minWidth: '62px', maxWidth: '62px' }} />
+                </>
+              )}
+              {visibleSemaines.map((s) => (
+                <col
+                  key={`col-${s.id}`}
+                  style={{ width: '106px', minWidth: '106px', maxWidth: '106px' }}
+                />
+              ))}
+            </colgroup>
+
             {/* =====================================================================
                 EN-TÊTE DU TABLEAU AVEC DOUBLE-BANDEAU CLAIREMENT DÉFINI
                ===================================================================== */}
-            <thead className="sticky top-0 z-30 shadow-sm">
+            <thead className="sticky top-0 z-40 shadow-sm">
               {/* LIGNE 1 : SÉPARATION MAJEURE DES DEUX VOLETS */}
               <tr className="border-b border-slate-700">
                 <th
-                  colSpan={viewMode === 'compact_frise' ? 3 : 10}
-                  className="sticky left-0 z-40 bg-slate-900 text-white font-extrabold text-[11px] uppercase tracking-wider py-2 px-3 text-left border-r-4 border-slate-950 shadow-[4px_0_12px_rgba(0,0,0,0.18)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-50 bg-slate-900 text-white font-extrabold text-[11px] uppercase tracking-wider py-2 px-3 text-left border-r-4 border-slate-950 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block" />
-                      VOLET 1 : DOSSIER COMMANDES &amp; IDENTIFICATION {viewMode === 'compact_frise' ? '(COMPACT)' : '(10 COLONNES FIXES)'}
+                      VOLET 1 : DOSSIER COMMANDES &amp; IDENTIFICATION {viewMode === 'compact_frise' ? '(COMPACT)' : '(11 COLONNES FIXES)'}
                     </span>
                     <span className="text-[9px] font-mono text-slate-400 font-normal">
                       PANNEAU GAUCHE FIXE
@@ -1137,8 +1109,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
               {/* LIGNE 2 : SEMAINE EN COURS & JAUGE DE CHARGE HEBDOMADAIRE */}
               <tr className="border-b border-slate-300">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 10}
-                  className="sticky left-0 z-40 bg-slate-800 text-white border-r-4 border-slate-950 px-3 py-1.5 text-xs shadow-[4px_0_12px_rgba(0,0,0,0.18)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-50 bg-slate-800 text-white border-r-4 border-slate-950 px-3 py-1.5 text-xs shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
@@ -1151,7 +1123,12 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                       >
                         {semaines.map((sem) => (
                           <option key={sem.code} value={sem.code}>
-                            {sem.code}
+                            {formatWeekCaption(
+                              sem.code,
+                              sem.date_label || sem.date_debut,
+                              isoWeekEnd(sem.date_debut),
+                              sem.code === currentSemaineCode
+                            )}
                           </option>
                         ))}
                       </select>
@@ -1213,8 +1190,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
               {/* LIGNE 3 : DATES DE DÉBUT DE SEMAINE */}
               <tr className="border-b border-slate-300">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 10}
-                  className="sticky left-0 z-40 bg-slate-100 border-r-4 border-slate-700 px-3 py-1 text-right text-[10px] font-bold text-slate-700 shadow-[4px_0_12px_rgba(0,0,0,0.18)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-50 bg-slate-100 border-r-4 border-slate-700 px-3 py-1 text-right text-[10px] font-bold text-slate-700 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   DATE DÉBUT DE SEMAINE (FRISE) ➔
                 </td>
@@ -1229,7 +1206,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                         : 'bg-white text-slate-800'
                     }`}
                   >
-                    {s.date_label || s.date_debut}
+                    {formatDay(s.date_label || s.date_debut)}
                   </td>
                 ))}
               </tr>
@@ -1237,8 +1214,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
               {/* LIGNE 4 : CODES SEMAINES S29 ➔ S51 */}
               <tr className="border-b border-slate-400">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 10}
-                  className="sticky left-0 z-40 bg-slate-200 border-r-4 border-slate-700 px-3 py-1.5 text-right text-[10px] font-extrabold text-slate-800 shadow-[4px_0_12px_rgba(0,0,0,0.18)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-50 bg-slate-200 border-r-4 border-slate-700 px-3 py-1.5 text-right text-[10px] font-extrabold text-slate-800 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   SEMAINES DU MACRO-PLANNING ➔
                 </td>
@@ -1262,6 +1239,31 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                         <span className="text-slate-400 font-normal text-[10px]">➔</span>
                       )}
                     </div>
+                    {(() => {
+                      const saC = saCountByWeek.get(s.code.toUpperCase()) || 0;
+                      const sbC = sbCountByWeek.get(s.code.toUpperCase()) || 0;
+                      if (saC === 0 && sbC === 0) return null;
+                      return (
+                        <div className="flex items-center justify-center gap-1 mt-0.5 text-[8.5px] font-sans font-black">
+                          {saC > 0 && (
+                            <span
+                              className="bg-[#ED7D31] text-white px-1 py-0.2 rounded shadow-2xs"
+                              title={`${saC} commande(s) avec lancement Sa en ${s.code}`}
+                            >
+                              Sa:{saC}
+                            </span>
+                          )}
+                          {sbC > 0 && (
+                            <span
+                              className="bg-[#C00000] text-white px-1 py-0.2 rounded shadow-2xs"
+                              title={`${sbC} commande(s) avec limite client Sb en ${s.code}`}
+                            >
+                              Sb:{sbC}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </th>
                 ))}
               </tr>
@@ -1270,13 +1272,13 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
               <tr className="bg-slate-100 border-b-2 border-slate-600 text-[10px] font-bold text-slate-800">
                 {viewMode === 'compact_frise' ? (
                   <>
-                    <th className="sticky left-0 z-40 bg-slate-200 border-r border-slate-400 w-[38px] min-w-[38px] max-w-[38px] py-1.5 text-center font-mono">
+                    <th className="sticky left-0 z-50 bg-slate-200 border-r border-slate-400 w-[38px] min-w-[38px] max-w-[38px] py-1.5 text-center font-mono">
                       N°
                     </th>
-                    <th className="sticky left-[38px] z-40 bg-slate-100 border-r border-slate-300 w-[160px] min-w-[160px] max-w-[160px] px-2 py-1.5 text-left">
+                    <th className="sticky left-[38px] z-50 bg-slate-100 border-r border-slate-300 w-[160px] min-w-[160px] max-w-[160px] px-2 py-1.5 text-left">
                       MODÈLE / CLIENT
                     </th>
-                    <th className="sticky left-[198px] z-40 bg-slate-100 border-r-4 border-slate-700 w-[64px] min-w-[64px] max-w-[64px] px-1 py-1.5 text-center leading-tight shadow-[4px_0_12px_rgba(0,0,0,0.14)]">
+                    <th className="sticky left-[198px] z-50 bg-slate-100 border-r-4 border-slate-700 w-[64px] min-w-[64px] max-w-[64px] px-1 py-1.5 text-center leading-tight shadow-[4px_0_12px_rgba(0,0,0,0.22)]">
                       RESTE
                       <br />À FAIRE
                     </th>
@@ -1284,47 +1286,47 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                 ) : (
                   <>
                     {/* Col 0 : N° (38px, left-0) */}
-                    <th className="sticky left-0 z-40 bg-slate-200 border-r border-slate-400 w-[38px] min-w-[38px] max-w-[38px] py-1.5 text-center font-mono">
+                    <th className="sticky left-0 z-50 bg-slate-200 border-r border-slate-400 w-[38px] min-w-[38px] max-w-[38px] py-1.5 text-center font-mono">
                       N°
                     </th>
                     {/* Col 1 : CLIENT (135px, left-[38px]) */}
-                    <th className="sticky left-[38px] z-40 bg-slate-100 border-r border-slate-300 w-[135px] min-w-[135px] max-w-[135px] px-2 py-1.5 text-left">
+                    <th className="sticky left-[38px] z-50 bg-slate-100 border-r border-slate-300 w-[135px] min-w-[135px] max-w-[135px] px-2 py-1.5 text-left">
                       CLIENT
                     </th>
                     {/* Col 2 : MODELE (200px, left-[173px]) */}
-                    <th className="sticky left-[173px] z-40 bg-slate-100 border-r border-slate-300 w-[200px] min-w-[200px] max-w-[200px] px-2 py-1.5 text-left">
+                    <th className="sticky left-[173px] z-50 bg-slate-100 border-r border-slate-300 w-[200px] min-w-[200px] max-w-[200px] px-2 py-1.5 text-left">
                       MODÈLE
                     </th>
                     {/* Col 3 : QTE COMMANDE (70px, left-[373px]) */}
-                    <th className="sticky left-[373px] z-40 bg-slate-100 border-r border-slate-300 w-[70px] min-w-[70px] max-w-[70px] px-1 py-1.5 text-center leading-tight">
+                    <th className="sticky left-[373px] z-50 bg-slate-100 border-r border-slate-300 w-[70px] min-w-[70px] max-w-[70px] px-1 py-1.5 text-center leading-tight">
                       QTÉ EN
                       <br />
                       COMMANDE
                     </th>
                     {/* Col 4 : UNITE (44px, left-[443px]) */}
-                    <th className="sticky left-[443px] z-40 bg-slate-100 border-r border-slate-300 w-[44px] min-w-[44px] max-w-[44px] px-1 py-1.5 text-center">
+                    <th className="sticky left-[443px] z-50 bg-slate-100 border-r border-slate-300 w-[44px] min-w-[44px] max-w-[44px] px-1 py-1.5 text-center">
                       UNITÉ
                     </th>
                     {/* Col 5 : HEURE / PCS (60px, left-[487px]) */}
-                    <th className="sticky left-[487px] z-40 bg-slate-100 border-r border-slate-300 w-[60px] min-w-[60px] max-w-[60px] px-1 py-1.5 text-center leading-tight">
+                    <th className="sticky left-[487px] z-50 bg-slate-100 border-r border-slate-300 w-[60px] min-w-[60px] max-w-[60px] px-1 py-1.5 text-center leading-tight">
                       HEURE /
                       <br />
                       PCS
                     </th>
                     {/* Col 6 : QTE FINIE (56px, left-[547px]) */}
-                    <th className="sticky left-[547px] z-40 bg-slate-100 border-r border-slate-300 w-[56px] min-w-[56px] max-w-[56px] px-1 py-1.5 text-center leading-tight">
+                    <th className="sticky left-[547px] z-50 bg-slate-100 border-r border-slate-300 w-[56px] min-w-[56px] max-w-[56px] px-1 py-1.5 text-center leading-tight">
                       QTÉ
                       <br />
                       FINIE
                     </th>
                     {/* Col 7 : RESTE A FAIRE (64px, left-[603px]) */}
-                    <th className="sticky left-[603px] z-40 bg-slate-100 border-r border-slate-300 w-[64px] min-w-[64px] max-w-[64px] px-1 py-1.5 text-center leading-tight">
+                    <th className="sticky left-[603px] z-50 bg-slate-100 border-r border-slate-300 w-[64px] min-w-[64px] max-w-[64px] px-1 py-1.5 text-center leading-tight">
                       RESTE
                       <br />À FAIRE
                     </th>
                     {/* Col 8 : BROD. DISPO (66px, left-[667px]) */}
                     <th
-                      className="sticky left-[667px] z-40 bg-indigo-100 border-r border-indigo-300 w-[66px] min-w-[66px] max-w-[66px] px-1 py-1.5 text-center leading-tight text-indigo-950 font-extrabold"
+                      className="sticky left-[667px] z-50 bg-indigo-100 border-r border-indigo-300 w-[66px] min-w-[66px] max-w-[66px] px-1 py-1.5 text-center leading-tight text-indigo-950 font-extrabold"
                       title="Nombre de brodeuses disponibles pour traiter la commande"
                     >
                       BROD.
@@ -1333,27 +1335,21 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                     </th>
                     {/* Col 9 : Sa LANCEMENT (62px, left-[733px]) */}
                     <th
-                      className="sticky left-[733px] z-40 bg-[#F8CBAD] border-r border-[#ED7D31] w-[62px] min-w-[62px] max-w-[62px] px-1 py-1.5 text-center leading-tight text-[#C55A11] font-black"
+                      className="sticky left-[733px] z-50 bg-[#FCE6D5] border-r border-[#ED7D31] w-[62px] min-w-[62px] max-w-[62px] px-1 py-1.5 text-center leading-tight text-[#C55A11] font-black"
                       title="Semaine de Lancement Sa (Orange Excel)"
                     >
                       Sa
                       <br />
                       LANCEM.
                     </th>
-                    {/* Col 10 : Sb LIMITE (62px, left-[795px]) */}
+                    {/* Col 10 : Sb LIMITE (62px, left-[795px]) - BORDURE DROITE DU VOLET FIXE */}
                     <th
-                      className="sticky left-[795px] z-40 bg-[#FFD9D9] border-r border-[#C00000] w-[62px] min-w-[62px] max-w-[62px] px-1 py-1.5 text-center leading-tight text-[#C00000] font-black"
+                      className="sticky left-[795px] z-50 bg-[#FFEAEA] border-r-4 border-slate-700 w-[62px] min-w-[62px] max-w-[62px] px-1 py-1.5 text-center leading-tight text-[#C00000] font-black shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                       title="Semaine Limite Livraison Client Sb (Rouge Excel)"
                     >
                       Sb
                       <br />
                       LIMITE
-                    </th>
-                    {/* Col 11 : PIECES PROGRAMMEES (80px, left-[857px]) */}
-                    <th className="sticky left-[857px] z-40 bg-slate-100 border-r-4 border-slate-700 w-[80px] min-w-[80px] max-w-[80px] px-1 py-1.5 text-center leading-tight shadow-[4px_0_12px_rgba(0,0,0,0.14)]">
-                      PIÈCES
-                      <br />
-                      PROG.
                     </th>
                   </>
                 )}
@@ -1403,7 +1399,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                     {viewMode === 'compact_frise' ? (
                       <>
                         <td
-                          className={`sticky left-0 z-20 border-r border-slate-400 text-center font-mono text-[11px] font-bold py-1 w-[38px] min-w-[38px] max-w-[38px] ${
+                          className={`sticky left-0 z-30 border-r border-slate-400 text-center font-mono text-[11px] font-bold py-1 w-[38px] min-w-[38px] max-w-[38px] ${
                             cmd.isCompletedOnTime
                               ? 'bg-[#70AD47] text-slate-950'
                               : 'bg-white text-slate-700'
@@ -1412,21 +1408,21 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                           {orderNumber}
                         </td>
                         <td
-                          className={`sticky left-[38px] z-20 border-r border-slate-300 px-2 py-1 truncate w-[160px] min-w-[160px] max-w-[160px] ${rowLabelClass}`}
+                          className={`sticky left-[38px] z-30 border-r border-slate-300 px-2 py-1 truncate w-[160px] min-w-[160px] max-w-[160px] ${rowLabelClass}`}
                         >
                           <div className="truncate font-bold text-xs">{cmd.modele}</div>
                           <div className="text-[10px] text-slate-500 truncate">{cmd.client}</div>
                         </td>
-                        <td className="sticky left-[198px] z-20 border-r-4 border-slate-700 px-1 py-1 text-right font-mono font-bold w-[64px] min-w-[64px] max-w-[64px] bg-white text-amber-900 shadow-[4px_0_12px_rgba(0,0,0,0.14)]">
+                        <td className="sticky left-[198px] z-30 border-r-4 border-slate-700 px-1 py-1 text-right font-mono font-bold w-[64px] min-w-[64px] max-w-[64px] bg-white text-amber-900 shadow-[4px_0_12px_rgba(0,0,0,0.22)]">
                           {cmd.resteAFaire}
                         </td>
                       </>
                     ) : (
-                      /* MODE PANORAMIQUE (10 COLONNES FIXES COMPLÈTES) */
+                      /* MODE PANORAMIQUE (12 COLONNES FIXES COMPLÈTES) */
                       <>
                         {/* 0. N° Commande */}
                         <td
-                          className={`sticky left-0 z-20 border-r border-slate-400 text-center font-mono text-[11px] font-bold py-1 w-[38px] min-w-[38px] max-w-[38px] ${
+                          className={`sticky left-0 z-30 border-r border-slate-400 text-center font-mono text-[11px] font-bold py-1 w-[38px] min-w-[38px] max-w-[38px] ${
                             cmd.isCompletedOnTime
                               ? 'bg-[#70AD47] text-slate-950 font-extrabold'
                               : 'bg-slate-100 text-slate-800'
@@ -1442,7 +1438,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                               onSetRowColor(cmd.id, activeBrush);
                             }
                           }}
-                          className={`sticky left-[38px] z-20 border-r border-slate-300 px-2 py-1 truncate w-[135px] min-w-[135px] max-w-[135px] ${rowLabelClass} ${
+                          className={`sticky left-[38px] z-30 border-r border-slate-300 px-2 py-1 truncate w-[135px] min-w-[135px] max-w-[135px] ${rowLabelClass} ${
                             activeBrush !== null ? 'cursor-pointer hover:opacity-80' : ''
                           }`}
                           title={`Commande N°${orderNumber} — ${cmd.client}${
@@ -1465,7 +1461,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                               onSetRowColor(cmd.id, activeBrush);
                             }
                           }}
-                          className={`sticky left-[173px] z-20 border-r border-slate-300 px-2 py-1 w-[200px] min-w-[200px] max-w-[200px] ${rowLabelClass} ${
+                          className={`sticky left-[173px] z-30 border-r border-slate-300 px-2 py-1 w-[200px] min-w-[200px] max-w-[200px] ${rowLabelClass} ${
                             activeBrush !== null ? 'cursor-pointer hover:opacity-80' : ''
                           }`}
                           title={`${cmd.modele}`}
@@ -1493,7 +1489,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                               {cmd.sbCode ? (
                                 <span
                                   className="bg-slate-900 text-amber-300 px-1.5 py-0.2 rounded font-mono font-bold tracking-tight"
-                                  title={`Date Limite Client (Sb) : Semaine ${cmd.sbCode} ${cmd.date_limite_client ? `(${cmd.date_limite_client})` : ''}`}
+                                  title={`Date Limite Client (Sb) : Semaine ${cmd.sbCode} ${cmd.date_limite_client ? `(${formatFullDate(cmd.date_limite_client)})` : ''}`}
                                 >
                                   Sb: {cmd.sbCode}
                                 </span>
@@ -1580,7 +1576,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                         {/* 3. QTE EN COMMANDE */}
                         <td
                           onClick={() => startEditFixed(cmd, 'qte_commande')}
-                          className={`sticky left-[373px] z-20 border-r border-slate-300 px-1.5 py-1 text-right font-mono tabular-nums font-semibold cursor-pointer hover:bg-indigo-50 w-[70px] min-w-[70px] max-w-[70px] ${
+                          className={`sticky left-[373px] z-30 border-r border-slate-300 px-1.5 py-1 text-right font-mono tabular-nums font-semibold cursor-pointer hover:bg-indigo-50 w-[70px] min-w-[70px] max-w-[70px] ${
                             cmd.isCompletedOnTime
                               ? 'bg-[#70AD47] text-slate-950 font-bold'
                               : 'bg-white text-slate-900'
@@ -1607,7 +1603,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
 
                         {/* 4. UNITE */}
                         <td
-                          className={`sticky left-[443px] z-20 border-r border-slate-300 px-1 py-1 text-center font-mono text-[10px] w-[44px] min-w-[44px] max-w-[44px] ${
+                          className={`sticky left-[443px] z-30 border-r border-slate-300 px-1 py-1 text-center font-mono text-[10px] w-[44px] min-w-[44px] max-w-[44px] ${
                             cmd.isCompletedOnTime
                               ? 'bg-[#70AD47] text-slate-950 font-bold'
                               : 'bg-white text-slate-600'
@@ -1619,7 +1615,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                         {/* 5. HEURE / PCS */}
                         <td
                           onClick={() => startEditFixed(cmd, 'heure_pcs')}
-                          className={`sticky left-[487px] z-20 border-r border-slate-300 px-1.5 py-1 text-right font-mono tabular-nums cursor-pointer hover:bg-indigo-50 w-[60px] min-w-[60px] max-w-[60px] ${
+                          className={`sticky left-[487px] z-30 border-r border-slate-300 px-1.5 py-1 text-right font-mono tabular-nums cursor-pointer hover:bg-indigo-50 w-[60px] min-w-[60px] max-w-[60px] ${
                             cmd.isCompletedOnTime
                               ? 'bg-[#70AD47] text-slate-950 font-bold'
                               : cmd.heure_pcs_tbc
@@ -1653,7 +1649,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                         {/* 6. QTE FINIE */}
                         <td
                           onClick={() => startEditFixed(cmd, 'qte_finie')}
-                          className={`sticky left-[547px] z-20 border-r border-slate-300 px-1.5 py-1 text-right font-mono tabular-nums cursor-pointer hover:bg-indigo-50 w-[56px] min-w-[56px] max-w-[56px] ${
+                          className={`sticky left-[547px] z-30 border-r border-slate-300 px-1.5 py-1 text-right font-mono tabular-nums cursor-pointer hover:bg-indigo-50 w-[56px] min-w-[56px] max-w-[56px] ${
                             cmd.isCompletedOnTime
                               ? 'bg-[#70AD47] text-slate-950 font-extrabold'
                               : 'bg-white text-emerald-800 font-bold'
@@ -1682,7 +1678,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
 
                         {/* 7. RESTE A FAIRE */}
                         <td
-                          className={`sticky left-[603px] z-20 border-r border-slate-300 px-1.5 py-1 text-right font-mono tabular-nums font-bold w-[64px] min-w-[64px] max-w-[64px] ${
+                          className={`sticky left-[603px] z-30 border-r border-slate-300 px-1.5 py-1 text-right font-mono tabular-nums font-bold w-[64px] min-w-[64px] max-w-[64px] ${
                             cmd.isCompletedOnTime
                               ? 'bg-[#70AD47] text-slate-950 font-extrabold'
                               : 'bg-slate-50 text-slate-900'
@@ -1695,7 +1691,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                         {/* 8. BROD. DISPO */}
                         <td
                           onClick={() => startEditFixed(cmd, 'nb_brodeuses_dispo')}
-                          className={`sticky left-[667px] z-20 border-r border-indigo-200 px-1.5 py-1 text-center font-mono tabular-nums cursor-pointer hover:bg-indigo-100 transition w-[66px] min-w-[66px] max-w-[66px] ${
+                          className={`sticky left-[667px] z-30 border-r border-indigo-200 px-1.5 py-1 text-center font-mono tabular-nums cursor-pointer hover:bg-indigo-100 transition w-[66px] min-w-[66px] max-w-[66px] ${
                             cmd.nb_brodeuses_dispo
                               ? 'bg-indigo-100 text-indigo-950 font-extrabold'
                               : cmd.brodeusesActives !== null
@@ -1730,88 +1726,144 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
 
                         {/* 9. Sa LANCEMENT (Orange Excel) */}
                         <td
-                          onClick={() => startEditFixed(cmd, 'semaine_lancement')}
-                          className="sticky left-[733px] z-20 border-r border-orange-200 px-1 py-1 text-center font-mono text-[10.5px] font-bold w-[62px] min-w-[62px] max-w-[62px] bg-[#F8CBAD]/40 text-[#C55A11] cursor-pointer hover:bg-[#F8CBAD]/90 transition"
-                          title="Semaine de Lancement Sa (cliquer pour modifier)"
+                          className="sticky left-[733px] z-30 border-r border-orange-200 px-1 py-1 text-center font-mono text-[10.5px] font-bold w-[62px] min-w-[62px] max-w-[62px] bg-[#FCE6D5] text-[#C55A11]"
                         >
                           {editingFixed?.cmdId === cmd.id && editingFixed.field === 'semaine_lancement' ? (
                             <select
                               autoFocus
                               value={cmd.saCode || ''}
                               onChange={(e) => {
-                                onUpdateCommande(cmd.id, { semaine_lancement: e.target.value || null });
+                                const val = e.target.value || null;
+                                onUpdateCommande(cmd.id, { semaine_lancement: val });
+                                if (val) scrollToWeek(val);
                                 setEditingFixed(null);
+                                onShowToast(
+                                  val
+                                    ? `Sa Lancement définie sur ${val} et repérée sur la frise.`
+                                    : 'Sa Lancement effacée.'
+                                );
                               }}
                               onBlur={() => setEditingFixed(null)}
-                              className="w-full text-center font-mono text-[10px] font-bold bg-white border border-[#ED7D31] rounded p-0 text-[#C55A11]"
+                              className="w-full text-center font-mono text-[10px] font-bold bg-white border border-[#ED7D31] rounded p-0 text-[#C55A11] focus:ring-1 focus:ring-orange-500"
                             >
                               <option value="">—</option>
                               {semaines.map((s) => (
                                 <option key={`sa_sel_${s.code}`} value={s.code}>
-                                  {s.code}
+                                  {s.code} ({formatDay(s.date_label || s.date_debut)})
                                 </option>
                               ))}
                             </select>
                           ) : cmd.saCode ? (
-                            <span className="px-1.5 py-0.5 rounded bg-[#ED7D31] text-white text-[9.5px] font-black shadow-2xs">
-                              {cmd.saCode}
-                            </span>
+                            <div className="flex items-center justify-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (cmd.saCode) {
+                                    scrollToWeek(cmd.saCode);
+                                    onShowToast(
+                                      `Frise calée sur la semaine de lancement Sa : ${cmd.saCode} (${cmd.client} - ${cmd.modele})`
+                                    );
+                                  }
+                                }}
+                                className="px-1.5 py-0.5 rounded bg-[#ED7D31] hover:bg-[#C55A11] text-white text-[9.5px] font-black shadow-2xs cursor-pointer flex items-center justify-center gap-0.5 transition-transform active:scale-95"
+                                title={`Cliquer pour faire défiler la frise vers Sa (${cmd.saCode})`}
+                              >
+                                <span>{cmd.saCode}</span>
+                                <ArrowRight className="w-2.5 h-2.5 opacity-70" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditFixed(cmd, 'semaine_lancement');
+                                }}
+                                className="text-[#C55A11] hover:text-[#8C3B00] text-[9px] p-0.5 hover:bg-orange-100 rounded cursor-pointer"
+                                title="Modifier la semaine Sa"
+                              >
+                                ✎
+                              </button>
+                            </div>
                           ) : (
-                            <span className="text-slate-400 text-[10px] hover:text-[#C55A11]">+ Sa</span>
+                            <button
+                              type="button"
+                              onClick={() => startEditFixed(cmd, 'semaine_lancement')}
+                              className="text-slate-400 text-[10px] hover:text-[#C55A11] hover:underline cursor-pointer"
+                              title="Définir la semaine de lancement Sa"
+                            >
+                              + Sa
+                            </button>
                           )}
                         </td>
 
-                        {/* 10. Sb LIMITE CLIENT (Rouge Excel) */}
+                        {/* 10. Sb LIMITE CLIENT (Rouge Excel) - BORDURE DROITE DU VOLET FIXE */}
                         <td
-                          onClick={() => startEditFixed(cmd, 'semaine_limite_client')}
-                          className="sticky left-[795px] z-20 border-r border-rose-200 px-1 py-1 text-center font-mono text-[10.5px] font-bold w-[62px] min-w-[62px] max-w-[62px] bg-[#FFD9D9]/40 text-[#C00000] cursor-pointer hover:bg-[#FFD9D9]/90 transition"
-                          title="Semaine Limite Livraison Client Sb (cliquer pour modifier)"
+                          className="sticky left-[795px] z-30 border-r-4 border-slate-700 px-1 py-1 text-center font-mono text-[10.5px] font-bold w-[62px] min-w-[62px] max-w-[62px] bg-[#FFEAEA] text-[#C00000] shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                         >
                           {editingFixed?.cmdId === cmd.id && editingFixed.field === 'semaine_limite_client' ? (
                             <select
                               autoFocus
                               value={cmd.sbCode || ''}
                               onChange={(e) => {
-                                onUpdateCommande(cmd.id, { semaine_limite_client: e.target.value || null });
+                                const val = e.target.value || null;
+                                onUpdateCommande(cmd.id, { semaine_limite_client: val });
+                                if (val) scrollToWeek(val);
                                 setEditingFixed(null);
+                                onShowToast(
+                                  val
+                                    ? `Sb Limite Client définie sur ${val} et repérée sur la frise.`
+                                    : 'Sb Limite Client effacée.'
+                                );
                               }}
                               onBlur={() => setEditingFixed(null)}
-                              className="w-full text-center font-mono text-[10px] font-bold bg-white border border-[#C00000] rounded p-0 text-[#C00000]"
+                              className="w-full text-center font-mono text-[10px] font-bold bg-white border border-[#C00000] rounded p-0 text-[#C00000] focus:ring-1 focus:ring-red-500"
                             >
                               <option value="">—</option>
                               {semaines.map((s) => (
                                 <option key={`sb_sel_${s.code}`} value={s.code}>
-                                  {s.code}
+                                  {s.code} ({formatDay(s.date_label || s.date_debut)})
                                 </option>
                               ))}
                             </select>
                           ) : cmd.sbCode ? (
-                            <span className="px-1.5 py-0.5 rounded bg-[#C00000] text-white text-[9.5px] font-black shadow-2xs">
-                              {cmd.sbCode}
-                            </span>
+                            <div className="flex items-center justify-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (cmd.sbCode) {
+                                    scrollToWeek(cmd.sbCode);
+                                    onShowToast(
+                                      `Frise calée sur la date limite client Sb : ${cmd.sbCode} (${cmd.client} - ${cmd.modele})`
+                                    );
+                                  }
+                                }}
+                                className="px-1.5 py-0.5 rounded bg-[#C00000] hover:bg-[#900000] text-white text-[9.5px] font-black shadow-2xs cursor-pointer flex items-center justify-center gap-0.5 transition-transform active:scale-95"
+                                title={`Cliquer pour faire défiler la frise vers Sb (${cmd.sbCode})`}
+                              >
+                                <span>{cmd.sbCode}</span>
+                                <ArrowRight className="w-2.5 h-2.5 opacity-70" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditFixed(cmd, 'semaine_limite_client');
+                                }}
+                                className="text-[#C00000] hover:text-[#800000] text-[9px] p-0.5 hover:bg-rose-100 rounded cursor-pointer"
+                                title="Modifier la semaine Sb"
+                              >
+                                ✎
+                              </button>
+                            </div>
                           ) : (
-                            <span className="text-slate-400 text-[10px] hover:text-[#C00000]">+ Sb</span>
+                            <button
+                              type="button"
+                              onClick={() => startEditFixed(cmd, 'semaine_limite_client')}
+                              className="text-slate-400 text-[10px] hover:text-[#C00000] hover:underline cursor-pointer"
+                              title="Définir la semaine limite client Sb"
+                            >
+                              + Sb
+                            </button>
                           )}
-                        </td>
-
-                        {/* 11. PIECES PROGRAMMEES + FRONTIÈRE VERTICALE MARQUÉE */}
-                        <td
-                          className={`sticky left-[857px] z-20 border-r-4 border-slate-700 px-1.5 py-1 text-right font-mono tabular-nums font-bold w-[80px] min-w-[80px] max-w-[80px] shadow-[4px_0_12px_rgba(0,0,0,0.14)] ${
-                            isBlankTbc
-                              ? 'bg-white text-slate-400'
-                              : cmd.isCompletedOnTime
-                              ? 'bg-[#70AD47] text-slate-950 font-extrabold'
-                              : cmd.manquant > 0
-                              ? 'bg-rose-100 text-rose-800'
-                              : 'bg-slate-100 text-slate-900'
-                          }`}
-                          title={
-                            cmd.manquant > 0
-                              ? `${cmd.totalProgramme} programmées (Manque ${cmd.manquant} pcs)`
-                              : `Somme des pièces programmées = ${cmd.totalProgramme}`
-                          }
-                        >
-                          {isBlankTbc ? '' : cmd.totalProgramme}
                         </td>
                       </>
                     )}
@@ -1833,7 +1885,7 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                         isGlissementWindow,
                         isNewGlissementDeadline,
                         isCompletedGreenSpan,
-                      } = resolveEffectiveWeekCellState(cmd, weekIdx, cell);
+                      } = resolveEffectiveWeekCellState(cmd, weekIdx, cell, sem.code);
 
                       const heures = nbHeuresExact(pieces, cmd.heure_pcs, cmd.heure_pcs_tbc);
                       const brodeusesExact = nbBrodeusesExact(heures, cell?.manual_brodeuses);
@@ -1847,15 +1899,22 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                       } else if (effectiveStatut === 'sst') {
                         bgStyle = 'bg-slate-200 text-slate-900 font-semibold';
                       } else if (isCurrentWeek) {
-                        bgStyle = 'bg-[#FFFF00] text-slate-950 font-bold';
+                        bgStyle = 'bg-[#FFFF00] text-slate-950 font-bold ring-1 ring-amber-500';
+                      } else if (isLaunchWeek && isInitialDeadlineWeek) {
+                        bgStyle =
+                          'bg-gradient-to-r from-[#FCE6D5] to-[#FFEAEA] text-slate-950 font-black ring-2 ring-red-600';
+                      } else if (isLaunchWeek) {
+                        bgStyle = hasPieces
+                          ? 'bg-[#FCE6D5] text-[#C55A11] font-black ring-2 ring-[#ED7D31]'
+                          : 'bg-[#FFF3E8] text-[#C55A11] font-bold border border-[#ED7D31]/50';
+                      } else if (isInitialDeadlineWeek) {
+                        bgStyle = hasPieces
+                          ? 'bg-[#FFEAEA] text-[#C00000] font-black ring-2 ring-[#C00000]'
+                          : 'bg-[#FFF0F0] text-[#C00000] font-bold border border-[#C00000]/50';
                       } else if (isGlissementWindow) {
                         bgStyle = hasPieces
                           ? 'bg-amber-100/90 text-slate-950 font-bold border-l-2 border-r-2 border-amber-600'
                           : 'bg-amber-50/70 text-amber-900 font-medium';
-                      } else if (isInitialDeadlineWeek) {
-                        bgStyle = hasPieces
-                          ? 'bg-amber-50 text-slate-950 font-bold ring-1 ring-slate-900'
-                          : 'bg-slate-100 text-slate-900 font-bold ring-1 ring-slate-800';
                       } else if (hasPieces) {
                         bgStyle = 'bg-indigo-50/70 text-slate-950 font-bold';
                       }
@@ -1864,6 +1923,10 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                       let borderTopClass = 'border-t border-slate-200';
                       if (cmd.isCompletedOnTime) {
                         borderTopClass = 'border-t-2 border-emerald-500';
+                      } else if (isInitialDeadlineWeek) {
+                        borderTopClass = 'border-t-2 border-[#C00000]';
+                      } else if (isLaunchWeek) {
+                        borderTopClass = 'border-t-2 border-[#ED7D31]';
                       } else if (isGlissementWindow) {
                         borderTopClass = 'border-t-2 border-amber-600';
                       }
@@ -1888,35 +1951,37 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                           className={`border-r-2 border-slate-400 px-1 py-1 text-center align-middle relative transition-colors cursor-pointer w-[106px] min-w-[106px] max-w-[106px] ${borderTopClass} ${bgStyle} ${
                             activeBrush !== null ? 'hover:ring-2 hover:ring-amber-500' : ''
                           }`}
-                          title={`Semaine ${sem.code} · ${pieces} pcs | ${
+                          title={`Semaine ${sem.code} (${formatDay(sem.date_label || sem.code)}) · ${pieces} pcs | ${
                             brodeusesRounded !== null ? brodeusesRounded + ' B' : ''
                           } | ${heures !== null ? formatExcelNumber(heures) + ' h' : ''}${
-                            isInitialDeadlineWeek ? ` | Date Limite Client Initiale (Sb : ${sem.code})` : ''
+                            isLaunchWeek ? ` | Semaine de Lancement (Sa: ${sem.code} · ${formatDay(sem.date_label || sem.code)})` : ''
+                          }${
+                            isInitialDeadlineWeek ? ` | Date Limite Client (Sb: ${sem.code} · ${formatDay(sem.date_label || sem.code)})` : ''
                           }${isGlissementWindow ? ` | GLISSEMENT vs Planning (Sb+${weekIdx - cmd.sbIdx})` : ''}`}
                         >
                           {/* Badges de repères chronologiques */}
+                          {isLaunchWeek && (
+                            <span
+                              className="absolute -top-1.5 -left-1 z-10 bg-[#ED7D31] text-white text-[7.5px] font-black px-1 rounded shadow-xs border border-orange-600"
+                              title={`Semaine de Lancement Sa (${sem.code} · ${formatDay(sem.date_label || sem.code)})`}
+                            >
+                              Sa 🚀
+                            </span>
+                          )}
                           {isInitialDeadlineWeek && (
                             <span
-                              className="absolute -top-1.5 -right-1 z-20 bg-slate-950 text-amber-300 text-[7.5px] font-black px-1 rounded shadow-xs border border-amber-400"
-                              title={`Date Limite Client Initiale (Sb: ${sem.code})`}
+                              className="absolute -top-1.5 -right-1 z-10 bg-[#C00000] text-white text-[7.5px] font-black px-1 rounded shadow-xs border border-rose-300"
+                              title={`Date Limite Client Initiale Sb (${sem.code} · ${formatDay(sem.date_label || sem.code)})`}
                             >
                               Sb ⚑
                             </span>
                           )}
                           {isNewGlissementDeadline && (
                             <span
-                              className="absolute -top-1.5 -right-1 z-20 bg-red-700 text-white text-[7.5px] font-black px-1 rounded shadow-xs"
+                              className="absolute -top-1.5 -right-1 z-10 bg-red-700 text-white text-[7.5px] font-black px-1 rounded shadow-xs"
                               title={`Nouvelle limite client après glissement (Sb+4: ${sem.code})`}
                             >
                               Sb+4 ⚠️
-                            </span>
-                          )}
-                          {isLaunchWeek && (
-                            <span
-                              className="absolute -top-1.5 -left-1 z-20 bg-slate-800 text-white text-[7.5px] font-black px-1 rounded shadow-xs"
-                              title={`Semaine de lancement (Sa: ${sem.code})`}
-                            >
-                              Sa 🚀
                             </span>
                           )}
                           {isEditing ? (
@@ -2023,8 +2088,12 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                                     ? '✓ FINI'
                                     : isGlissementWindow
                                     ? `GLISS ${cmd.sbIdx >= 0 ? `+${weekIdx - cmd.sbIdx}s` : ''}`
+                                    : isLaunchWeek && isInitialDeadlineWeek
+                                    ? 'Sa/Sb 🚀⚑'
+                                    : isLaunchWeek
+                                    ? 'Sa 🚀'
                                     : isInitialDeadlineWeek
-                                    ? 'LIMITE Sb'
+                                    ? 'Sb ⚑'
                                     : ''}
                                 </span>
                                 {heures !== null && (
@@ -2040,17 +2109,24 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                             <div className="w-full h-4 flex items-center justify-center font-mono font-bold text-[9px] text-emerald-800">
                               ✓ FINI
                             </div>
+                          ) : isLaunchWeek && isInitialDeadlineWeek ? (
+                            <div className="w-full py-0.5 flex flex-col items-center justify-center font-mono font-black text-[7px] bg-white/95 rounded shadow-2xs border border-red-500 leading-tight">
+                              <span className="text-[#C55A11]">Sa 🚀 ({formatDay(sem.date_label || sem.code)})</span>
+                              <span className="text-[#C00000]">Sb ⚑ ({formatDay(sem.date_label || sem.code)})</span>
+                            </div>
+                          ) : isLaunchWeek ? (
+                            <div className="w-full py-0.5 flex flex-col items-center justify-center font-mono font-black text-[7.5px] bg-[#FCE6D5] text-[#C55A11] rounded shadow-2xs border border-[#ED7D31] leading-tight">
+                              <span>Sa 🚀 LANCEM.</span>
+                              <span className="text-[7px] font-semibold text-slate-700">{formatDay(sem.date_label || sem.code)}</span>
+                            </div>
                           ) : isInitialDeadlineWeek ? (
-                            <div className="w-full h-4 flex items-center justify-center font-mono font-black text-[8px] bg-slate-950 text-amber-300 rounded px-0.5 shadow-2xs border border-amber-400/60">
-                              Sb ⚑ LIMITE
+                            <div className="w-full py-0.5 flex flex-col items-center justify-center font-mono font-black text-[7.5px] bg-[#FFEAEA] text-[#C00000] rounded shadow-2xs border border-[#C00000] leading-tight">
+                              <span>Sb ⚑ LIMITE</span>
+                              <span className="text-[7px] font-semibold text-slate-700">{formatDay(sem.date_label || sem.code)}</span>
                             </div>
                           ) : isGlissementWindow ? (
                             <div className="w-full h-4 flex items-center justify-center font-mono font-bold text-[7.5px] bg-amber-100 text-amber-950 rounded border border-dashed border-amber-400">
                               Gliss {cmd.sbIdx >= 0 ? `+${weekIdx - cmd.sbIdx}s` : ''}
-                            </div>
-                          ) : isLaunchWeek ? (
-                            <div className="w-full h-4 flex items-center justify-center font-mono text-[8px] bg-slate-200 text-slate-700 rounded">
-                              Sa 🚀
                             </div>
                           ) : null}
                         </td>
@@ -2065,8 +2141,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                  ===================================================================== */}
               <tr className="bg-slate-100 h-5 border-t-2 border-slate-400">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 10}
-                  className="sticky left-0 z-20 bg-slate-100 border-r-4 border-slate-700 shadow-[4px_0_12px_rgba(0,0,0,0.14)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-30 bg-slate-100 border-r-4 border-slate-700 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 />
                 {visibleSemaines.map((s) => (
                   <td key={`r50-${s.id}`} className="border-r-2 border-slate-300 bg-slate-100" />
@@ -2078,8 +2154,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                  ===================================================================== */}
               <tr className="bg-slate-200 font-mono font-bold text-slate-950 border-t-2 border-slate-500">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 10}
-                  className="sticky left-0 z-20 bg-slate-200 border-r-4 border-slate-700 px-3 py-1.5 text-right font-sans text-xs font-extrabold text-slate-900 shadow-[4px_0_12px_rgba(0,0,0,0.14)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-30 bg-slate-200 border-r-4 border-slate-700 px-3 py-1.5 text-right font-sans text-xs font-extrabold text-slate-900 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] text-slate-600 font-mono">
@@ -2109,8 +2185,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                  ===================================================================== */}
               <tr className="bg-white font-mono font-bold border-t border-slate-300">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 10}
-                  className="sticky left-0 z-20 bg-white border-r-4 border-slate-700 px-3 py-1.5 text-right font-sans text-xs font-bold text-slate-800 shadow-[4px_0_12px_rgba(0,0,0,0.14)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-30 bg-white border-r-4 border-slate-700 px-3 py-1.5 text-right font-sans text-xs font-bold text-slate-800 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   EFFECTIF ATELIER DISPO (42 Brod. = 1680h/sem) &amp; ÉCART D'HEURES ➔
                 </td>
@@ -2161,8 +2237,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
               {/* LIGNE 53 EXCEL : GLISSEMENT VS PLANNING (Bleu) */}
               <tr className="bg-white border-t border-slate-300 font-mono">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 12}
-                  className="sticky left-0 z-20 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.14)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-30 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -2196,8 +2272,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
               {/* LIGNE 54 EXCEL : SEMAINE EN COURS & DEMI-CHARGE (Jaune) */}
               <tr className="bg-white border-t border-slate-300 font-mono">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 12}
-                  className="sticky left-0 z-20 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.14)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-30 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="px-2 py-0.5 rounded bg-[#FFFF00] text-slate-950 font-sans font-black text-[10.5px] border border-amber-400">
@@ -2227,8 +2303,8 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
               {/* LIGNE 55 EXCEL : SEMAINE DE LANCEMENT (Orange) */}
               <tr className="bg-white border-t border-slate-300 font-mono">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 12}
-                  className="sticky left-0 z-20 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.14)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-30 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   <div className="flex items-center justify-between">
                     <span
@@ -2247,21 +2323,36 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                     </span>
                   </div>
                 </td>
-                {visibleSemaines.map((s) => (
-                  <td
-                    key={`r55-lanc-${s.id}`}
-                    className="border-r-2 border-slate-300 bg-[#F8CBAD]/30 text-center text-[9px] font-mono text-[#C55A11] font-bold"
-                  >
-                    {s.code}
-                  </td>
-                ))}
+                {visibleSemaines.map((s) => {
+                  const saCount = saCountByWeek.get(s.code.toUpperCase().trim()) || 0;
+                  return (
+                    <td
+                      key={`r55-lanc-${s.id}`}
+                      className={`border-r-2 border-slate-300 text-center text-[9px] font-mono transition-colors w-[106px] min-w-[106px] max-w-[106px] ${
+                        saCount > 0
+                          ? 'bg-[#ED7D31] text-white font-black ring-1 ring-orange-600 shadow-xs'
+                          : 'bg-[#F8CBAD]/30 text-[#C55A11] font-bold'
+                      }`}
+                      title={`Semaine ${s.code} (${formatDay(s.date_label || s.code)}) : ${saCount} commande(s) avec lancement Sa`}
+                    >
+                      {saCount > 0 ? (
+                        <div className="flex flex-col items-center leading-tight py-0.5">
+                          <span className="font-extrabold">{saCount} Sa 🚀</span>
+                          <span className="text-[7.5px] opacity-90">{formatDay(s.date_label || s.code)}</span>
+                        </div>
+                      ) : (
+                        s.code
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
 
               {/* LIGNE 56 EXCEL : LIMITE LIVRAISON CLIENT (Rouge) */}
               <tr className="bg-white border-t border-slate-300 font-mono">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 12}
-                  className="sticky left-0 z-20 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.14)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-30 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   <div className="flex items-center justify-between">
                     <span
@@ -2280,21 +2371,36 @@ export const TableauFriseChronologique: React.FC<TableauFriseChronologiqueProps>
                     </span>
                   </div>
                 </td>
-                {visibleSemaines.map((s) => (
-                  <td
-                    key={`r56-lim-${s.id}`}
-                    className="border-r-2 border-slate-300 bg-[#FFD9D9]/30 text-center text-[9px] font-mono text-[#C00000] font-bold"
-                  >
-                    {s.code}
-                  </td>
-                ))}
+                {visibleSemaines.map((s) => {
+                  const sbCount = sbCountByWeek.get(s.code.toUpperCase().trim()) || 0;
+                  return (
+                    <td
+                      key={`r56-lim-${s.id}`}
+                      className={`border-r-2 border-slate-300 text-center text-[9px] font-mono transition-colors w-[106px] min-w-[106px] max-w-[106px] ${
+                        sbCount > 0
+                          ? 'bg-[#C00000] text-white font-black ring-1 ring-red-700 shadow-xs'
+                          : 'bg-[#FFD9D9]/30 text-[#C00000] font-bold'
+                      }`}
+                      title={`Semaine ${s.code} (${formatDay(s.date_label || s.code)}) : ${sbCount} commande(s) avec limite client Sb`}
+                    >
+                      {sbCount > 0 ? (
+                        <div className="flex flex-col items-center leading-tight py-0.5">
+                          <span className="font-extrabold">{sbCount} Sb ⚑</span>
+                          <span className="text-[7.5px] opacity-90">{formatDay(s.date_label || s.code)}</span>
+                        </div>
+                      ) : (
+                        s.code
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
 
               {/* LIGNE 57 EXCEL : SST - SOUS-TRAITANCE (Gris) */}
               <tr className="bg-white border-t border-slate-300 font-mono">
                 <td
-                  colSpan={viewMode === 'compact_frise' ? 3 : 12}
-                  className="sticky left-0 z-20 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.14)]"
+                  colSpan={viewMode === 'compact_frise' ? 3 : 11}
+                  className="sticky left-0 z-30 bg-white border-r-4 border-slate-700 px-3 py-1 shadow-[4px_0_12px_rgba(0,0,0,0.22)]"
                 >
                   <div className="flex items-center justify-between">
                     <span

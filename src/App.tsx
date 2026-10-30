@@ -4,10 +4,15 @@ import { Navbar, PlanningPage } from './components/Navbar';
 import { TableauFriseChronologique } from './components/TableauFriseChronologique';
 import { CommandeModal } from './components/CommandeModal';
 import { MicroPlanningView } from './components/MicroPlanning/MicroPlanningView';
+import { LoginScreen } from './components/LoginScreen';
 import { Commande } from './data/initialData';
+import { AuthUser, getStoredSession, clearSession } from './utils/auth';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function App() {
+  // Authentication state
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getStoredSession());
+
   // Active page: 'macro' (Macro-Planning Broderie) or 'micro' (Micro-Planning Confection & Pose)
   const [activePage, setActivePage] = useState<PlanningPage>(() => {
     try {
@@ -46,7 +51,6 @@ export default function App() {
     duplicateCommande,
     deleteCommande,
     autoDispatch,
-    resetToS34Reference,
     importData,
     exportData,
   } = useMacroPlanning();
@@ -108,7 +112,25 @@ export default function App() {
     [importData, activePage]
   );
 
+  const handleLogout = () => {
+    clearSession();
+    setCurrentUser(null);
+    showToast('Vous avez été déconnecté avec succès.');
+  };
+
   const allWeekCodes = data.semaines.map((s) => s.code);
+
+  // Écran de connexion si non authentifié
+  if (!currentUser) {
+    return (
+      <LoginScreen
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          showToast(`Bienvenue ${user.prenom} (${user.posteLabel}) !`);
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -126,6 +148,8 @@ export default function App() {
 
       {/* Top Header Navbar with Macro / Micro Switcher */}
       <Navbar
+        currentUser={currentUser}
+        onLogout={handleLogout}
         activePage={activePage}
         onSelectPage={handleSelectPage}
         currentWeek={data.config.semaine_courante}
@@ -141,10 +165,6 @@ export default function App() {
         onImportData={(parsed) => {
           importData(parsed);
           showToast(`Import terminé (${parsed.commandes?.length || 0} commandes chargées).`);
-        }}
-        onResetS34={() => {
-          resetToS34Reference();
-          showToast('Tableau restauré à la version originale exacte S34.');
         }}
         totalCommandes={metrics.totalCommandes}
         totalPiecesCommandees={metrics.totalPiecesCommandees}

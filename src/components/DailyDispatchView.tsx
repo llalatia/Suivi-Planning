@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ProductionOrder, ProductionLine, ShiftType } from '../types';
 import { calculateDailyDispatch } from '../utils/dispatchEngine';
+import { formatFullDate, formatFullDateWithName } from '../utils/dateDisplay';
 import {
   Sun,
   Sunset,
@@ -65,7 +66,7 @@ export const DailyDispatchView: React.FC<DailyDispatchViewProps> = ({ orders, li
             </button>
             <div className="flex items-center gap-2 px-3 text-xs font-bold text-slate-900">
               <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{new Date(selectedDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              <span>{formatFullDateWithName(selectedDate)}</span>
             </div>
             <button
               onClick={() => changeDate(1)}
@@ -217,7 +218,7 @@ export const DailyDispatchView: React.FC<DailyDispatchViewProps> = ({ orders, li
                                   </p>
                                   <div className="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-500">
                                     <span>Durée : <strong>{slot.allocatedHours}h</strong></span>
-                                    <span>Livraison : <strong>{order?.deadlineDate}</strong></span>
+                                    <span>Livraison : <strong>{formatFullDate(order?.deadlineDate)}</strong></span>
                                   </div>
                                 </div>
                               );

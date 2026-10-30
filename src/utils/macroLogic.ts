@@ -99,8 +99,32 @@ export function resolveWeekIndexFromCodeOrDate(
   return -1;
 }
 
-export type CommandeStatut = 'ok' | 'sous_planifie' | 'termine' | 'tbc' | 'glissement';
+// Semaine où le cumul des pièces programmées solde la commande (à défaut, dernière semaine programmée)
+function resolvePlannedFinishWeekIdx(
+  semaines: Semaine[],
+  cPlanning: PlanningCell[],
+  resteAFaire: number,
+  totalProgramme: number
+): number {
+  const target = resteAFaire > 0 ? resteAFaire : totalProgramme;
+  if (target <= 0) return -1;
 
+  let finishIdx = -1;
+  let lastActiveIdx = -1;
+  let cumul = 0;
+
+  for (let idx = 0; idx < semaines.length; idx++) {
+    const pcs = cPlanning.find((p) => p.semaine_id === semaines[idx].id)?.nb_pieces || 0;
+    if (pcs <= 0) continue;
+    lastActiveIdx = idx;
+    cumul += pcs;
+    if (finishIdx === -1 && cumul >= target) finishIdx = idx;
+  }
+
+  return finishIdx !== -1 ? finishIdx : lastActiveIdx;
+}
+
+export type CommandeStatut = 'ok' | 'sous_planifie' | 'termine' | 'tbc' | 'glissement';
 export interface CommandeCalculated extends Commande {
   excelRowNumber: number;
   resteAFaire: number;
@@ -185,17 +209,24 @@ export function calculateCommande(
     });
   }
 
-  // 1. Déterminer Sa (Semaine de Lancement) UNIQUEMENT si définie sur la commande ou via cellule 'lancement'
+  // 1. Déterminer Sa (Semaine de Lancement) : renseignée sur la commande, puis peinte sur la
+  // frise, sinon automatiquement la première semaine programmée
   let saIdx = resolveWeekIndexFromCodeOrDate(semaines, c.semaine_lancement, c.date_lancement);
   if (saIdx === -1 && cellLancementIdx !== -1) saIdx = cellLancementIdx;
+  if (saIdx === -1) saIdx = firstActiveWeekIdx;
 
-  // 2. Déterminer Sb (Semaine Date Limite Client initiale) UNIQUEMENT si définie sur la commande ou via cellule 'limite_client'
+  // 2. Déterminer Sb (Semaine Date Limite Client initiale) : renseignée sur la commande, puis
+  // peinte sur la frise, sinon automatiquement la semaine où le cumul programmé solde le reste à faire
   let sbIdx = resolveWeekIndexFromCodeOrDate(
     semaines,
     c.semaine_limite_client,
     c.date_limite_client
   );
   if (sbIdx === -1 && cellLimiteIdx !== -1) sbIdx = cellLimiteIdx;
+  // Un Sb dérivé du programme sert à l'affichage uniquement : les alertes de glissement
+  // restent déclenchées par une date limite réellement saisie (commande, cellule ou ligne)
+  const sbSaisi = sbIdx !== -1;
+  if (sbIdx === -1) sbIdx = resolvePlannedFinishWeekIdx(semaines, cPlanning, resteAFaire, totalProgramme);
 
   // Assurer que Sb >= Sa si les deux existent
   if (saIdx !== -1 && sbIdx !== -1 && sbIdx < saIdx) {
@@ -236,7 +267,7 @@ export function calculateCommande(
   let glissementEndIdx = -1;
   let effectiveDeadlineIdx = sbIdx;
 
-  if (sbIdx >= 0) {
+  if (sbSaisi && sbIdx >= 0) {
     const hasOverduePieces = lastActiveWeekIdx > sbIdx;
     const isOverdueWithRemaining = currentIdx > sbIdx && resteAFaire > 0;
     if (hasOverduePieces || isOverdueWithRemaining || c.row_color === 'glissement' || hasManualGlissementCell) {

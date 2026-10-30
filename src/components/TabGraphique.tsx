@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SemaineCalculated, CommandeCalculated } from '../utils/macroLogic';
+import { formatDay } from '../utils/dateDisplay';
 import {
   Users,
   Clock,
@@ -525,7 +526,7 @@ export const TabGraphique: React.FC<TabGraphiqueProps> = ({
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-400 font-mono">{sem.date_debut}</span>
+                    <span className="text-[11px] text-slate-400 font-mono">{formatDay(sem.date_debut)}</span>
                   </div>
 
                   {/* Horizontal Bar Graphic */}

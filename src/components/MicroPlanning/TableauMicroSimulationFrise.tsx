@@ -8,6 +8,7 @@ import {
 import { FicheEtatModeleModal } from './FicheEtatModeleModal';
 import { TableauMicroSimulationExcel } from './TableauMicroSimulationExcel';
 import { getModelColor, hexToRgba } from '../../utils/modelColorUtils';
+import { formatDay, formatWeekCaption, isoAddDays } from '../../utils/dateDisplay';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import {
   ALL_52_WEEK_CODES,
@@ -90,13 +91,21 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
         orderedMap.set(weekCode, primary.length > 0 ? primary : candidates);
       } else {
         const cal = CALENDAR_52_WEEKS[wIdx];
-        const syntheticDays: MicroTimelineDay[] = [
-          { colIdx: 1000 + wIdx * 5 + 0, week: weekCode, excelDate: 46000 + wIdx * 7 + 0, fullDate: cal.date_debut, dateLabel: cal.date_label, dayName: 'Lun', isActualite: false, isPrevision: true },
-          { colIdx: 1000 + wIdx * 5 + 1, week: weekCode, excelDate: 46000 + wIdx * 7 + 1, fullDate: cal.date_debut, dateLabel: cal.date_label, dayName: 'Mar', isActualite: false, isPrevision: true },
-          { colIdx: 1000 + wIdx * 5 + 2, week: weekCode, excelDate: 46000 + wIdx * 7 + 2, fullDate: cal.date_debut, dateLabel: cal.date_label, dayName: 'Mer', isActualite: false, isPrevision: true },
-          { colIdx: 1000 + wIdx * 5 + 3, week: weekCode, excelDate: 46000 + wIdx * 7 + 3, fullDate: cal.date_debut, dateLabel: cal.date_label, dayName: 'Jeu', isActualite: false, isPrevision: true },
-          { colIdx: 1000 + wIdx * 5 + 4, week: weekCode, excelDate: 46000 + wIdx * 7 + 4, fullDate: cal.date_friday, dateLabel: cal.date_label, dayName: 'Ven', isActualite: false, isPrevision: true },
-        ];
+        const syntheticDays: MicroTimelineDay[] = (['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'] as const).map(
+          (dayName, offset) => {
+            const iso = isoAddDays(cal.date_debut, offset);
+            return {
+              colIdx: 1000 + wIdx * 5 + offset,
+              week: weekCode,
+              excelDate: 46000 + wIdx * 7 + offset,
+              fullDate: iso,
+              dateLabel: formatDay(iso),
+              dayName,
+              isActualite: false,
+              isPrevision: true,
+            };
+          }
+        );
         orderedMap.set(weekCode, syntheticDays);
       }
     });
@@ -104,11 +113,18 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
     return orderedMap;
   }, [timelineDays]);
 
-  // Find index of active week (S41, index 40)
+  // Semaine du jour pointé (S41 pour 12/10), calculée depuis currentColIdx et non plus figée
+  const pivotDay = useMemo(
+    () => timelineDays.find((d) => d.colIdx === currentColIdx) || null,
+    [timelineDays, currentColIdx]
+  );
+  const pivotDate = formatDay(pivotDay?.dateLabel || currentDateKey);
+  const pivotWeek = pivotDay?.week || 'S41';
+
   const defaultWeekIdx = useMemo(() => {
-    const idx = allWeeks.indexOf('S41');
+    const idx = pivotWeek ? allWeeks.indexOf(pivotWeek) : -1;
     return idx >= 0 ? idx : 40;
-  }, [allWeeks]);
+  }, [allWeeks, pivotWeek]);
 
   const [visibleWeeksRange, setVisibleWeeksRange] = useState<number>(defaultWeekIdx);
 
@@ -205,16 +221,13 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
 
   const getWeekFriendlyLabel = (weekCode: string) => {
     const daysInWeek = weeksMap.get(weekCode) || [];
-    const firstDay = daysInWeek[0];
-    const lastDay = daysInWeek[daysInWeek.length - 1];
-    const isCurrent = weekCode === allWeeks[defaultWeekIdx];
     const calInfo = getCalendarWeek(weekCode);
-    const dateRange =
-      firstDay && lastDay
-        ? `${firstDay.dateLabel} - ${lastDay.dateLabel}`
-        : calInfo?.date_label || '';
-    const month = calInfo ? ` · ${calInfo.mois_short}` : '';
-    return `${weekCode}${isCurrent ? ' ★ (12/10 - Active)' : ''}${dateRange ? ` [${dateRange}]` : ''}${month}`;
+    return formatWeekCaption(
+      weekCode,
+      daysInWeek[0]?.dateLabel ?? calInfo?.date_debut,
+      daysInWeek[daysInWeek.length - 1]?.dateLabel ?? calInfo?.date_friday,
+      weekCode === allWeeks[defaultWeekIdx]
+    );
   };
 
   const handleSelectPeriodPreset = (
@@ -412,9 +425,9 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
                   ? 'bg-[#FFFF00] text-slate-950 font-black shadow-xs ring-1 ring-amber-400'
                   : 'text-slate-300 hover:text-white'
               }`}
-              title="Semaine contenant le 12-10 (S41)"
+              title={`Semaine contenant le ${pivotDate} (${pivotWeek})`}
             >
-              ★ S41 Active
+              ★ {pivotWeek} active ({pivotDate})
             </button>
             <button
               onClick={() => handleSelectPeriodPreset('beforeS41')}
@@ -423,9 +436,9 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
                   ? 'bg-slate-950 text-white shadow-xs font-black border border-slate-700'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
               }`}
-              title="Semaines avant S41 (S35-S40)"
+              title={`Semaines avant ${pivotWeek}`}
             >
-              ⏪ Avant S41
+              ⏪ Avant {pivotWeek}
             </button>
             <button
               onClick={() => handleSelectPeriodPreset('s52')}
@@ -579,15 +592,31 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
         <>
           {/* Main Timeline Grid (Compact) */}
           <div ref={scrollContainerRef} className="overflow-x-auto w-full max-h-[72vh]">
-            <table className="w-full text-xs text-left border-collapse select-none">
+            <table className="w-full text-xs text-left border-collapse select-none table-fixed">
+              {/* STRICT COLUMN WIDTHS FOR SIMULATION FRISE */}
+              <colgroup>
+                <col style={{ width: '140px', minWidth: '140px', maxWidth: '140px' }} />
+                <col style={{ width: '95px', minWidth: '95px', maxWidth: '95px' }} />
+                <col style={{ width: '170px', minWidth: '170px', maxWidth: '170px' }} />
+                <col style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }} />
+                <col style={{ width: '56px', minWidth: '56px', maxWidth: '56px' }} />
+                <col style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }} />
+                {displayedDays.map((d) => (
+                  <col
+                    key={`col_day_${d.colIdx}`}
+                    style={{ width: '136px', minWidth: '136px', maxWidth: '144px' }}
+                  />
+                ))}
+              </colgroup>
+
               {/* Two-tier Table Header */}
-              <thead className="sticky top-0 z-20 shadow-xs">
+              <thead className="sticky top-0 z-30 shadow-xs">
             {/* Tier 1: Weeks */}
             <tr className="bg-slate-900 text-white font-bold text-[11px] uppercase tracking-wider">
               {/* Sticky Left Corner Header */}
               <th
                 colSpan={6}
-                className="sticky left-0 z-30 bg-slate-900 py-2 px-3 border-r-2 border-slate-700 text-left"
+                className="sticky left-0 z-40 bg-slate-900 py-2 px-3 border-r-4 border-slate-950 text-left w-[589px] min-w-[589px] max-w-[589px] shadow-[4px_0_10px_rgba(0,0,0,0.22)]"
               >
                 <div className="flex items-center justify-between">
                   <span>IDENTIFICATION MODÈLE & ATELIER</span>
@@ -615,28 +644,28 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
             {/* Tier 2: Sub-headers (Model Columns + Day Columns) */}
             <tr className="bg-slate-800 text-slate-200 font-bold text-[10px] uppercase border-b-2 border-slate-600">
               {/* Sticky Columns */}
-              <th className="sticky left-0 z-30 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 min-w-[140px] text-left">
+              <th className="sticky left-0 z-40 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 w-[140px] min-w-[140px] max-w-[140px] text-left">
                 CHAÎNE / LIGNE
               </th>
-              <th className="sticky left-[140px] z-30 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 min-w-[95px] text-left">
+              <th className="sticky left-[140px] z-40 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 w-[95px] min-w-[95px] max-w-[95px] text-left">
                 CLIENT
               </th>
-              <th className="sticky left-[235px] z-30 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 min-w-[170px] text-left">
+              <th className="sticky left-[235px] z-40 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 w-[170px] min-w-[170px] max-w-[170px] text-left">
                 MODÈLE / STYLE
               </th>
-              <th className="sticky left-[405px] z-30 bg-slate-800 py-1.5 px-2 border-r border-slate-700 text-right w-16 bg-slate-850">
+              <th className="sticky left-[405px] z-40 bg-slate-850 py-1.5 px-2 border-r border-slate-700 text-right w-16 min-w-[64px] max-w-[64px]">
                 OF (PCS)
               </th>
-              <th className="sticky left-[469px] z-30 bg-slate-800 py-1.5 px-2 border-r border-slate-700 text-right w-14">
+              <th className="sticky left-[469px] z-40 bg-slate-800 py-1.5 px-2 border-r border-slate-700 text-right w-14 min-w-[56px] max-w-[56px]">
                 OBJ/J
               </th>
-              <th className="sticky left-[525px] z-30 bg-slate-800 py-1.5 px-2 border-r-2 border-slate-700 text-right w-16 bg-emerald-950/60 text-emerald-300">
+              <th className="sticky left-[525px] z-40 bg-slate-900 py-1.5 px-2 border-r-4 border-slate-700 text-right w-16 min-w-[64px] max-w-[64px] text-emerald-300 shadow-[4px_0_10px_rgba(0,0,0,0.22)]">
                 CUMUL
               </th>
 
               {/* Individual Day Columns: Clean header without clutter, 4 cases below */}
               {displayedDays.map((d) => {
-                const isHighlight = d.dateLabel === '10/12' || d.dateLabel === '12/10';
+                const isHighlight = d.colIdx === currentColIdx;
                 return (
                   <th
                     key={`th_day_${d.colIdx}`}
@@ -645,11 +674,11 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
                         ? 'bg-amber-500 text-slate-950 font-black'
                         : 'bg-slate-800 text-slate-300'
                     }`}
-                    title={`${d.dayName} ${d.dateLabel} (${d.week})`}
+                    title={`${d.dayName} ${formatDay(d.dateLabel)} (${d.week})`}
                   >
                     <div className="flex items-center justify-between px-1 text-[9px] font-sans font-bold leading-none">
                       <span>{d.dayName}</span>
-                      <span className="text-[10px] font-mono">{d.dateLabel}</span>
+                      <span className="text-[10px] font-mono">{formatDay(d.dateLabel)}</span>
                     </div>
                   </th>
                 );
@@ -698,27 +727,26 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
                       job.qtyTotal > 0
                         ? Math.min(100, Math.round((job.cumulRealise / job.qtyTotal) * 100))
                         : 0;
+                    const rowSolidBg = isDone ? 'bg-emerald-50' : jIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
 
                     return (
                       <tr
                         key={job.id}
-                        className={`hover:bg-amber-50/50 transition-colors ${
-                          jIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'
-                        } ${isDone ? 'bg-emerald-50/30' : ''}`}
+                        className={`hover:bg-amber-100/70 transition-colors ${rowSolidBg}`}
                       >
                         {/* 1. Chaîne Sticky */}
-                        <td className="sticky left-0 z-10 bg-inherit py-2 px-2.5 border-r border-slate-200 font-sans font-semibold text-slate-700 text-[10px] truncate max-w-[140px]">
+                        <td className={`sticky left-0 z-30 ${rowSolidBg} py-2 px-2.5 border-r border-slate-200 font-sans font-semibold text-slate-700 text-[10px] truncate max-w-[140px]`}>
                           {job.chaine}
                         </td>
 
                         {/* 2. Client Sticky */}
-                        <td className="sticky left-[140px] z-10 bg-inherit py-2 px-2.5 border-r border-slate-200 font-sans font-bold text-slate-800 text-[11px] truncate max-w-[95px]">
+                        <td className={`sticky left-[140px] z-30 ${rowSolidBg} py-2 px-2.5 border-r border-slate-200 font-sans font-bold text-slate-800 text-[11px] truncate max-w-[95px]`}>
                           {job.client}
                         </td>
 
                         {/* 3. Modèle / Style Sticky */}
                         <td
-                          className="sticky left-[235px] z-10 bg-inherit py-2 px-2.5 border-r border-slate-200 font-sans font-bold text-slate-900 text-[11px] truncate max-w-[170px]"
+                          className={`sticky left-[235px] z-30 ${rowSolidBg} py-2 px-2.5 border-r border-slate-200 font-sans font-bold text-slate-900 text-[11px] truncate max-w-[170px]`}
                           style={{
                             borderLeft: `3px solid ${getModelColor(job.style, modelColors, job.color)}`,
                           }}
@@ -750,12 +778,12 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
                         </td>
 
                         {/* 4. OF Total Sticky */}
-                        <td className="sticky left-[405px] z-10 bg-slate-100 py-2 px-2 text-right font-extrabold text-slate-900 border-r border-slate-200">
+                        <td className="sticky left-[405px] z-30 bg-slate-100 py-2 px-2 text-right font-extrabold text-slate-900 border-r border-slate-200">
                           {job.qtyTotal > 0 ? job.qtyTotal : '-'}
                         </td>
 
                         {/* 5. Target Obj/J Sticky */}
-                        <td className="sticky left-[469px] z-10 bg-inherit py-1 px-1.5 text-right border-r border-slate-200 text-[10px]">
+                        <td className={`sticky left-[469px] z-30 ${rowSolidBg} py-1 px-1.5 text-right border-r border-slate-200 text-[10px]`}>
                           {(() => {
                             const targets = Array.from(
                               new Set(
@@ -790,11 +818,11 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
                           })()}
                         </td>
 
-                        {/* 6. Cumul Realise Sticky */}
-                        <td className="sticky left-[525px] z-10 bg-emerald-50 py-2 px-2 text-right font-extrabold text-emerald-800 border-r-2 border-slate-300">
+                        {/* 6. Cumul Realise Sticky + Strong boundary */}
+                        <td className="sticky left-[525px] z-30 bg-emerald-100 py-2 px-2 text-right font-extrabold text-emerald-950 border-r-4 border-slate-700 shadow-[4px_0_10px_rgba(0,0,0,0.22)]">
                           <div className="flex flex-col items-end leading-none">
                             <span>{job.cumulRealise || 0}</span>
-                            <span className="text-[9px] text-slate-400 font-sans">{pct}%</span>
+                            <span className="text-[9px] text-slate-500 font-sans">{pct}%</span>
                           </div>
                         </td>
 
@@ -824,7 +852,7 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
                             editingCell?.colIdx === col &&
                             editingCell?.field === 'cumul';
 
-                          const isHighlight = day.dateLabel === '12/10' || day.dateLabel === '10/12';
+                          const isHighlight = day.colIdx === currentColIdx;
 
                           return (
                             <td
@@ -1058,8 +1086,8 @@ export const TableauMicroSimulationFrise: React.FC<TableauMicroSimulationFrisePr
         job={selectedModelHealthJob}
         rows={[]}
         timelineDays={timelineDays}
-        currentDateKey="12-10"
-        currentColIdx={267}
+        currentDateKey={currentDateKey}
+        currentColIdx={currentColIdx}
         onUpdateJobTarget={onUpdateJobTarget}
         onUpdateJobDayField={onUpdateJobDayField}
       />

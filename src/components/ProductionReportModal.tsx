@@ -1,5 +1,6 @@
 import React from 'react';
 import { ProductionOrder, ProductionLine, ProductionReportKPI, ProductionSettings } from '../types';
+import { formatFullDate } from '../utils/dateDisplay';
 import {
   FileText,
   Printer,
@@ -98,7 +99,7 @@ export const ProductionReportModal: React.FC<ProductionReportModalProps> = ({
               </p>
             </div>
             <div className="text-right font-mono text-slate-500 text-xs">
-              Date du rapport : {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+              Date du rapport : {formatFullDate(new Date().toISOString())}
             </div>
           </div>
 
@@ -239,8 +240,8 @@ export const ProductionReportModal: React.FC<ProductionReportModalProps> = ({
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="text-[11px] text-slate-500">Date promise : {ord.deadlineDate}</span>
-                          <p className="text-rose-700 font-bold text-xs">Fin calculée : {ord.estimatedEndDate}</p>
+                          <span className="text-[11px] text-slate-500">Date promise : {formatFullDate(ord.deadlineDate)}</span>
+                          <p className="text-rose-700 font-bold text-xs">Fin calculée : {formatFullDate(ord.estimatedEndDate)}</p>
                         </div>
                       </div>
                     );

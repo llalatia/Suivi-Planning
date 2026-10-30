@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Commande, Semaine, INITIAL_PLANNING_DATA } from '../data/initialData';
 import { resolveWeekIndexFromCodeOrDate, HEURES_PAR_BRODEUSE_SEMAINE } from '../utils/macroLogic';
 import { getDateFromWeekCode, getCalendarWeek } from '../utils/calendarUtils';
+import { formatWeekCaption, isoWeekEnd } from '../utils/dateDisplay';
 import { X, Check, Users } from 'lucide-react';
 
 interface CommandeModalProps {
@@ -388,7 +389,7 @@ export const CommandeModal: React.FC<CommandeModalProps> = ({
                   <option value="">-- Non définie --</option>
                   {semaines.map((s) => (
                     <option key={s.code} value={s.code}>
-                      {s.code} ({s.date_label || s.date_debut})
+                      {formatWeekCaption(s.code, s.date_label || s.date_debut, isoWeekEnd(s.date_debut), false)}
                     </option>
                   ))}
                 </select>
@@ -414,7 +415,7 @@ export const CommandeModal: React.FC<CommandeModalProps> = ({
                   <option value="">-- Non définie --</option>
                   {semaines.map((s) => (
                     <option key={s.code} value={s.code}>
-                      {s.code} ({s.date_label || s.date_debut})
+                      {formatWeekCaption(s.code, s.date_label || s.date_debut, isoWeekEnd(s.date_debut), false)}
                     </option>
                   ))}
                 </select>

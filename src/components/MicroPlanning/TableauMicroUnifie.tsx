@@ -7,6 +7,7 @@ import {
 } from '../../data/microPlanningTypes';
 import { matchStyleWithModel } from '../../utils/useMicroPlanning';
 import { getModelColor } from '../../utils/modelColorUtils';
+import { formatDay, formatWeekCaption, isoAddDays } from '../../utils/dateDisplay';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { FicheEtatModeleModal } from './FicheEtatModeleModal';
 import { TableauMicroSimulationExcel } from './TableauMicroSimulationExcel';
@@ -136,13 +137,22 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
       } else {
         // Fallback calendar days based on standard ISO calendar
         const cal = CALENDAR_52_WEEKS[wIdx];
-        const syntheticDays: MicroTimelineDay[] = [
-          { colIdx: 1000 + wIdx * 5 + 0, week: weekCode, excelDate: 46000 + wIdx * 7 + 0, fullDate: cal.date_debut, dateLabel: cal.date_label, dayName: 'Lun', isActualite: false, isPrevision: true },
-          { colIdx: 1000 + wIdx * 5 + 1, week: weekCode, excelDate: 46000 + wIdx * 7 + 1, fullDate: cal.date_debut, dateLabel: cal.date_label, dayName: 'Mar', isActualite: false, isPrevision: true },
-          { colIdx: 1000 + wIdx * 5 + 2, week: weekCode, excelDate: 46000 + wIdx * 7 + 2, fullDate: cal.date_debut, dateLabel: cal.date_label, dayName: 'Mer', isActualite: false, isPrevision: true },
-          { colIdx: 1000 + wIdx * 5 + 3, week: weekCode, excelDate: 46000 + wIdx * 7 + 3, fullDate: cal.date_debut, dateLabel: cal.date_label, dayName: 'Jeu', isActualite: false, isPrevision: true },
-          { colIdx: 1000 + wIdx * 5 + 4, week: weekCode, excelDate: 46000 + wIdx * 7 + 4, fullDate: cal.date_friday, dateLabel: cal.date_label, dayName: 'Ven', isActualite: false, isPrevision: true },
-        ];
+        const isoOfWeekday = (offset: number) => isoAddDays(cal.date_debut, offset);
+        const syntheticDays: MicroTimelineDay[] = (['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'] as const).map(
+          (dayName, offset) => {
+            const iso = isoOfWeekday(offset);
+            return {
+              colIdx: 1000 + wIdx * 5 + offset,
+              week: weekCode,
+              excelDate: 46000 + wIdx * 7 + offset,
+              fullDate: iso,
+              dateLabel: formatDay(iso),
+              dayName,
+              isActualite: false,
+              isPrevision: true,
+            };
+          }
+        );
         orderedMap.set(weekCode, syntheticDays);
       }
     });
@@ -157,6 +167,14 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
     const idx = allWeeks.indexOf(activeDay.week);
     return idx >= 0 ? idx : 40;
   }, [timelineDays, currentColIdx, allWeeks]);
+
+  // Libellés du jour pointé : une seule forme pour toute la vue unifiée
+  const pivotDay = useMemo(
+    () => timelineDays.find((d) => d.colIdx === currentColIdx) || null,
+    [timelineDays, currentColIdx]
+  );
+  const pivotDate = formatDay(pivotDay?.dateLabel || currentDateKey);
+  const pivotWeek = pivotDay?.week || allWeeks[currentWeekIdx] || 'S41';
 
   // Timeline window navigation: starts right on S41 (contains 12-10) by default
   const [visibleWeekStart, setVisibleWeekStart] = useState<number>(() => {
@@ -186,16 +204,13 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
 
   const getWeekFriendlyLabel = (weekCode: string) => {
     const daysInWeek = weeksMap.get(weekCode) || [];
-    const firstDay = daysInWeek[0];
-    const lastDay = daysInWeek[daysInWeek.length - 1];
-    const isCurrent = weekCode === allWeeks[currentWeekIdx];
     const calInfo = getCalendarWeek(weekCode);
-    const dateRange =
-      firstDay && lastDay
-        ? `${firstDay.dateLabel} - ${lastDay.dateLabel}`
-        : calInfo?.date_label || '';
-    const month = calInfo ? ` · ${calInfo.mois_short}` : '';
-    return `${weekCode}${isCurrent ? ' ★ (12/10 - Active)' : ''}${dateRange ? ` [${dateRange}]` : ''}${month}`;
+    return formatWeekCaption(
+      weekCode,
+      daysInWeek[0]?.dateLabel ?? calInfo?.date_debut,
+      daysInWeek[daysInWeek.length - 1]?.dateLabel ?? calInfo?.date_friday,
+      weekCode === allWeeks[currentWeekIdx]
+    );
   };
 
   // Quick preset period selector adapted to normal calendar
@@ -463,7 +478,7 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                   1. Suivi Opérationnel d'Atelier
                 </h2>
                 <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] px-2 py-0.5 rounded font-mono font-semibold">
-                  Pointage du Jour : {currentDateKey}
+                  Pointage du jour : {pivotDate}
                 </span>
               </div>
               <p className="text-[11px] text-slate-300">
@@ -682,7 +697,7 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                             onUpdateDailyField(row.id, 'realPacking', Number(e.target.value))
                           }
                           className="w-16 text-right font-black text-slate-950 bg-white border border-slate-900 rounded px-1.5 py-0.5 shadow-2xs focus:outline-none focus:ring-1 focus:ring-amber-400"
-                          title="Saisir la quantité emballée aujourd'hui (12-10)"
+                          title={`Saisir la quantité emballée le ${pivotDate}`}
                         />
                       </td>
 
@@ -874,19 +889,9 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
         <div className="px-4 py-2.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 text-xs border-b border-slate-800">
           <div className="flex items-center gap-2.5">
             <Layers className="w-4 h-4 text-amber-400" />
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-extrabold uppercase tracking-wide text-white text-xs">
-                TABLEAU SIMULATION &amp; FRISE DE PRODUCTION
-              </h2>
-              {selectedRow ? (
-                <span className="bg-slate-200 text-slate-950 text-[10px] px-2 py-0.5 rounded font-extrabold">
-                  Chaîne sélectionnée : {selectedRow.chaine} ({selectedRow.modele})
-                </span>
-              ) : null}
-            </div>
-            <span className="hidden md:inline-block text-[10px] text-slate-400 border-l border-slate-700 pl-2">
-              Vue chronologique par chaîne · 1ère Ligne = Semaines · 2ème Ligne = Dates journalières
-            </span>
+            <h2 className="font-extrabold uppercase tracking-wide text-white text-xs">
+              TABLEAU SIMULATION &amp; FRISE DE PRODUCTION
+            </h2>
           </div>
 
           {/* Mode Switcher: Excel MICRO-PLANNING (8 Lignes) vs Compact (4 Cases) */}
@@ -921,28 +926,6 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                 <LayoutGrid className="w-3.5 h-3.5" />
                 <span>Format Compact (4 Cases)</span>
               </button>
-            </div>
-
-            {/* Status indicators in pure monochrome with yellow for active date */}
-            <div className="hidden lg:flex items-center gap-3 text-[11px] pl-3 border-l border-slate-700">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                <span className="text-slate-300">
-                  <strong className="text-white">Réalisé (Passé)</strong> : Pièces physiques produites
-                </span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#FFFF00] ring-1 ring-amber-400"></span>
-                <span className="text-[#FFFF00] font-black">
-                  Date en cours ({currentDateKey})
-                </span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
-                <span className="text-slate-300">
-                  <strong className="text-white">Prévisions (Futur)</strong> : Cadences cibles (pcs/j)
-                </span>
-              </span>
             </div>
           </div>
         </div>
@@ -999,9 +982,9 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                     ? 'bg-[#FFFF00] text-slate-950 font-black shadow-xs ring-1 ring-amber-400'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800'
                 }`}
-                title="Semaine contenant le 12-10 (S41)"
+                title={`Semaine contenant le ${pivotDate} (${pivotWeek})`}
               >
-                ★ S41 Active (12-10)
+                ★ {pivotWeek} active ({pivotDate})
               </button>
               <button
                 onClick={() => handleSelectPeriodPreset('beforeS41')}
@@ -1010,9 +993,9 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                     ? 'bg-slate-700 text-white shadow-xs'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800'
                 }`}
-                title="Afficher les semaines avant S41 (S35 à S40)"
+                title={`Afficher les 6 semaines avant ${pivotWeek}`}
               >
-                ⏪ Avant S41
+                ⏪ Avant {pivotWeek}
               </button>
               <button
                 onClick={() => handleSelectPeriodPreset('s52')}
@@ -1164,17 +1147,31 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
         ) : (
           <>
             <div className="overflow-x-auto w-full max-h-[65vh]">
-          <table className="w-full text-xs text-left border-collapse select-none">
+          <table className="w-full text-xs text-left border-collapse select-none table-fixed">
+            {/* STRICT COLUMN WIDTHS FOR UNIFIED TABLE */}
+            <colgroup>
+              <col style={{ width: '130px', minWidth: '130px', maxWidth: '130px' }} />
+              <col style={{ width: '150px', minWidth: '150px', maxWidth: '150px' }} />
+              <col style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }} />
+              <col style={{ width: '56px', minWidth: '56px', maxWidth: '56px' }} />
+              {displayedDays.map((d) => (
+                <col
+                  key={`col_day_${d.colIdx}`}
+                  style={{ width: '90px', minWidth: '90px', maxWidth: '100px' }}
+                />
+              ))}
+            </colgroup>
+
             {/* Header 1 & 2 */}
-            <thead className="sticky top-0 z-20 shadow-xs">
+            <thead className="sticky top-0 z-30 shadow-xs">
               {/* LIGNE 1 : SEMAINES & ZONES */}
               <tr className="bg-slate-900 text-white font-bold text-[10.5px] uppercase tracking-wider">
                 <th
                   colSpan={4}
-                  className="sticky left-0 z-30 bg-slate-900 py-2 px-3 border-r-2 border-slate-700 text-left min-w-[320px]"
+                  className="sticky left-0 z-40 bg-slate-900 py-2 px-3 border-r-4 border-slate-950 text-left w-[400px] min-w-[400px] max-w-[400px] shadow-[4px_0_10px_rgba(0,0,0,0.22)]"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-amber-300 font-extrabold">CHAÎNE & MODÈLE SIMULÉ</span>
+                    <span className="text-amber-300 font-extrabold">CHAÎNE &amp; MODÈLE SIMULÉ</span>
                     <span className="text-[10px] text-slate-400 font-normal">
                       ({filteredJobs.length} modèles actifs)
                     </span>
@@ -1184,9 +1181,10 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                 {/* Week Columns */}
                 {displayedWeeks.map((weekCode) => {
                   const daysInWeek = weeksMap.get(weekCode) || [];
+                  const todayDay = daysInWeek.find((d) => d.colIdx === currentColIdx);
                   const hasPastDays = daysInWeek.some((d) => d.colIdx <= currentColIdx);
                   const hasFutureDays = daysInWeek.some((d) => d.colIdx > currentColIdx);
-                  const hasToday = daysInWeek.some((d) => d.colIdx === currentColIdx);
+                  const hasToday = !!todayDay;
 
                   return (
                     <th
@@ -1204,11 +1202,11 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                         <span className="text-xs font-black">{weekCode}</span>
                         {hasToday ? (
                           <span className="text-[9px] bg-amber-400/30 text-amber-200 px-1 rounded font-sans uppercase">
-                            ★ Actuel
+                            ★ {formatDay(todayDay?.dateLabel)} actif
                           </span>
                         ) : hasPastDays && !hasFutureDays ? (
                           <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1 rounded font-sans uppercase">
-                            Actualité
+                            réalisé
                           </span>
                         ) : (
                           <span className="text-[9px] bg-indigo-500/30 text-indigo-200 px-1 rounded font-sans uppercase">
@@ -1223,16 +1221,16 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
 
               {/* LIGNE 2 : DÉTAILS MODÈLE + DATES JOURNALIÈRES */}
               <tr className="bg-slate-800 text-slate-200 font-bold text-[10px] uppercase border-b-2 border-slate-600">
-                <th className="sticky left-0 z-30 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 min-w-[130px]">
+                <th className="sticky left-0 z-40 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 w-[130px] min-w-[130px] max-w-[130px]">
                   CHAÎNE
                 </th>
-                <th className="sticky left-[130px] z-30 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 min-w-[150px]">
+                <th className="sticky left-[130px] z-40 bg-slate-800 py-1.5 px-2.5 border-r border-slate-700 w-[150px] min-w-[150px] max-w-[150px]">
                   STYLE / MODÈLE
                 </th>
-                <th className="sticky left-[280px] z-30 bg-slate-850 py-1.5 px-2 border-r border-slate-700 text-right w-16 text-white">
+                <th className="sticky left-[280px] z-40 bg-slate-850 py-1.5 px-2 border-r border-slate-700 text-right w-16 min-w-[64px] max-w-[64px] text-white">
                   OF TOTAL
                 </th>
-                <th className="sticky left-[344px] z-30 bg-slate-800 py-1.5 px-2 border-r-2 border-slate-600 text-right w-14 text-indigo-200">
+                <th className="sticky left-[344px] z-40 bg-slate-800 py-1.5 px-2 border-r-4 border-slate-700 text-right w-14 min-w-[56px] max-w-[56px] text-indigo-200 shadow-[4px_0_10px_rgba(0,0,0,0.22)]">
                   OBJ/J
                 </th>
 
@@ -1251,7 +1249,7 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                           ? 'bg-slate-800/95 border-slate-700 text-emerald-300'
                           : 'bg-slate-850 border-slate-700 text-sky-200'
                       }`}
-                      title={`${day.dayName} ${day.dateLabel} (${day.week})`}
+                      title={`${day.dayName} ${formatDay(day.dateLabel)} (${day.week})`}
                     >
                       <div className="flex items-center justify-between px-1.5 text-[9px] font-sans font-bold leading-none">
                         <span className="uppercase text-slate-400">{day.dayName}</span>
@@ -1261,7 +1259,7 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                               isPivot ? 'text-amber-300 underline font-black' : ''
                             }`}
                           >
-                            {day.dateLabel}
+                            {formatDay(day.dateLabel)}
                           </span>
                           {isPivot && (
                             <span className="text-[7.5px] bg-amber-400 text-slate-950 px-1 rounded font-sans font-extrabold">
@@ -1318,19 +1316,19 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                       return (
                         <tr
                           key={job.id}
-                          className={`hover:bg-amber-50/40 transition-colors ${
+                          className={`hover:bg-amber-100/70 transition-colors ${
                             isStyleSelected
-                              ? 'bg-amber-100/60 font-semibold'
+                              ? 'bg-amber-100 font-semibold'
                               : 'bg-white'
                           }`}
                         >
                           {/* Chaîne */}
-                          <td className="sticky left-0 z-10 bg-inherit py-1.5 px-2.5 border-r border-slate-200 font-sans text-slate-600 truncate max-w-[130px]">
+                          <td className={`sticky left-0 z-30 ${isStyleSelected ? 'bg-amber-100' : 'bg-white'} py-1.5 px-2.5 border-r border-slate-200 font-sans text-slate-600 truncate max-w-[130px]`}>
                             {job.chaine}
                           </td>
 
                           {/* Style & Client */}
-                          <td className="sticky left-[130px] z-10 bg-inherit py-1.5 px-2.5 border-r border-slate-200 font-sans">
+                          <td className={`sticky left-[130px] z-30 ${isStyleSelected ? 'bg-amber-100' : 'bg-white'} py-1.5 px-2.5 border-r border-slate-200 font-sans`}>
                             <div className="flex items-center justify-between gap-1">
                               <button
                                 type="button"
@@ -1350,12 +1348,12 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                           </td>
 
                           {/* OF Total */}
-                          <td className="sticky left-[280px] z-10 bg-inherit py-1.5 px-2 text-right font-bold text-slate-900 border-r border-slate-200 bg-slate-50">
+                          <td className={`sticky left-[280px] z-30 ${isStyleSelected ? 'bg-amber-100' : 'bg-slate-50'} py-1.5 px-2 text-right font-bold text-slate-900 border-r border-slate-200`}>
                             {job.qtyTotal ? `${job.qtyTotal}p` : '—'}
                           </td>
 
                           {/* OBJ/J */}
-                          <td className="sticky left-[344px] z-10 bg-inherit py-1 px-1.5 text-right font-extrabold text-indigo-700 border-r-2 border-slate-300">
+                          <td className={`sticky left-[344px] z-30 ${isStyleSelected ? 'bg-amber-100' : 'bg-white'} py-1 px-1.5 text-right font-extrabold text-indigo-700 border-r-4 border-slate-700 shadow-[4px_0_10px_rgba(0,0,0,0.22)]`}>
                             {(() => {
                               const targets = Array.from(
                                 new Set(
@@ -1442,7 +1440,7 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                                     jobId: job.id,
                                     modelName: job.style,
                                     colIdx: day.colIdx,
-                                    dateLabel: day.dateLabel,
+                                    dateLabel: formatDay(day.dateLabel),
                                     week: day.week,
                                     coupe: coupeVal,
                                     alim: alimVal,
@@ -1695,7 +1693,7 @@ export const TableauMicroUnifie: React.FC<TableauMicroUnifieProps> = ({
                 </h3>
               </div>
               <span className="bg-slate-100 text-slate-700 text-xs font-mono px-2 py-0.5 rounded font-bold">
-                {editingDayCell.dateLabel} ({editingDayCell.week})
+                {formatDay(editingDayCell.dateLabel)} ({editingDayCell.week})
               </span>
             </div>
 

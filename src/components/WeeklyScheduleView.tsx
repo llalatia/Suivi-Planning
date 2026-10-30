@@ -1,5 +1,6 @@
 import React from 'react';
 import { ProductionOrder, ProductionLine, ProductionSettings } from '../types';
+import { formatDay, formatWeekdayShort } from '../utils/dateDisplay';
 import { Calendar, AlertTriangle, Layers, Clock, TrendingUp } from 'lucide-react';
 
 interface WeeklyScheduleViewProps {
@@ -23,11 +24,12 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
   const daysOfWeek = Array.from({ length: settings.workingDaysPerWeek }).map((_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
     return {
-      dateStr: d.toISOString().split('T')[0],
-      dayName: d.toLocaleDateString('fr-FR', { weekday: 'short' }),
-      dayNumber: d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
-      isToday: d.toISOString().split('T')[0] === today.toISOString().split('T')[0],
+      dateStr,
+      dayName: formatWeekdayShort(dateStr),
+      dayNumber: formatDay(dateStr),
+      isToday: dateStr === today.toISOString().split('T')[0],
     };
   });
 

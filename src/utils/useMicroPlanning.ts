@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, type SetStateAction } from 'react';
 import {
   MicroPlanningData,
   MicroDailyRow,
@@ -8,6 +8,8 @@ import {
 import { INITIAL_MICRO_PLANNING_DATA } from '../data/microPlanningInitialData';
 import { exportMicroPlanningToXLSX } from './microExcel';
 import { getModelColor, normalizeModelKey } from './modelColorUtils';
+import { applyCumulFrom, normalizeJobs } from './microFormulas';
+import { isSameDay } from './dateDisplay';
 
 const STORAGE_KEY = 'micro_planning_data_v5';
 
@@ -30,13 +32,10 @@ export function matchStyleWithModel(
     return js === 'BLIOVA ORANGE';
   }
 
-  // In sheet 12-10: "BLIOVA ECRU BLACK...", "BLIOVA BLACK SS", "BLIOVA ECRU SS"
-  // -> In SIMULATION on Marguerite 1: "BLIOVA BLACK / ECRU" (OF 224p, active 06/10-20/10)
-  if (
-    rm.includes('ECRU BLACK') ||
-    rm.includes('BLACK SS') ||
-    (rm.includes('BLIOVA') && rm.includes('ECRU') && !rm.includes('BURNT'))
-  ) {
+  // Feuilles journalières : les sous-lots « BLIOVA ECRU BLACK SS/FR1..FR6 » forment le style
+  // « BLIOVA BLACK / ECRU » de la SIMULATION (OF 224p, 31 emballées et 122 au cumul le 12/10).
+  // « BLIOVA BLACK SS » et « BLIOVA ECRU SS » restent des styles distincts de la frise.
+  if (rm.includes('ECRU BLACK')) {
     if (rowChaine && rowChaine.toUpperCase().includes('SIEGE')) {
       return js.includes('BLIOVA ECRU SS');
     }
@@ -60,8 +59,20 @@ export function matchStyleWithModel(
   return s1 === s2;
 }
 
+function chainsMatch(jobChaine: string, rowChaine: string): boolean {
+  const a = jobChaine.trim().toLowerCase();
+  const b = rowChaine.trim().toLowerCase();
+  const head = (s: string) => s.split(' ')[0];
+  return a === b || a.startsWith(head(b)) || b.startsWith(head(a));
+}
+
+/** Lignes journalières qui alimentent un style de la frise (un style = plusieurs sous-lots). */
+export function rowsForJob(job: MicroJob, rows: MicroDailyRow[]): MicroDailyRow[] {
+  return rows.filter((r) => chainsMatch(job.chaine, r.chaine) && matchStyleWithModel(job.style, r.modele, r.chaine));
+}
+
 export function useMicroPlanning() {
-  const [data, setData] = useState<MicroPlanningData>(() => {
+  const [data, setDataRaw] = useState<MicroPlanningData>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -72,14 +83,23 @@ export function useMicroPlanning() {
           parsed.jobs &&
           parsed.dailyTracking
         ) {
-          return parsed;
+          return { ...parsed, jobs: normalizeJobs(parsed.jobs) };
         }
       }
     } catch (e) {
       console.warn('Could not parse saved micro planning data', e);
     }
-    return INITIAL_MICRO_PLANNING_DATA;
+    return { ...INITIAL_MICRO_PLANNING_DATA, jobs: normalizeJobs(INITIAL_MICRO_PLANNING_DATA.jobs) };
   });
+
+  // CUMUL PACK et RESTE À FAIRE sont des lignes calculées : elles sont recalculées à chaque
+  // mutation pour être persistées et exportées au même titre que les saisies manuelles.
+  const setData = useCallback((updater: SetStateAction<MicroPlanningData>) => {
+    setDataRaw((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      return { ...next, jobs: normalizeJobs(next.jobs || []) };
+    });
+  }, []);
 
   // Save to localStorage on change
   useEffect(() => {
@@ -116,9 +136,7 @@ export function useMicroPlanning() {
       }
 
       // Find matching timeline colIdx if date exists
-      const foundDay = prev.timelineDays.find(
-        (td) => td.dateLabel === newDateKey.replace('-', '/')
-      );
+      const foundDay = prev.timelineDays.find((td) => isSameDay(td.dateLabel, newDateKey));
       const nextColIdx = foundDay ? foundDay.colIdx : prev.currentColIdx;
 
       return {
@@ -138,7 +156,7 @@ export function useMicroPlanning() {
     (id: string, field: keyof MicroDailyRow, value: any) => {
       setData((prev) => {
         const rows = prev.dailyTracking[prev.currentDateKey] || [];
-        let updatedRowTarget: MicroDailyRow | null = null;
+        const oldRow = field === 'realPacking' ? rows.find((r) => r.id === id) : undefined;
 
         const nextRows = rows.map((r) => {
           if (r.id !== id) return r;
@@ -161,35 +179,34 @@ export function useMicroPlanning() {
             updated.pctCoupe = ofVal > 0 ? Math.min(1, coupeVal / ofVal) : 0;
           }
 
-          updatedRowTarget = updated;
           return updated;
         });
 
-        // Bidirectional sync: if realPacking was edited, update corresponding job cell in simulation!
+        // Liaison journalier -> frise : la frise conserve sa saisie manuelle, la modification
+        // d'un sous-lot y reporte son écart (FR3 de 2 à 5 fait passer le REAL du jour de 31 à 34).
         let nextJobs = prev.jobs;
-        if (field === 'realPacking' && updatedRowTarget) {
-          const row = updatedRowTarget as MicroDailyRow;
+        if (field === 'realPacking' && oldRow) {
+          const delta = (Number(value) || 0) - (oldRow.realPacking || 0);
           const colIdx = prev.currentColIdx;
 
-          nextJobs = prev.jobs.map((job) => {
-            const chainMatch =
-              job.chaine.toLowerCase().includes(row.chaine.toLowerCase()) ||
-              row.chaine.toLowerCase().includes(job.chaine.toLowerCase());
-            const styleMatch = matchStyleWithModel(job.style, row.modele);
+          if (delta !== 0) {
+            nextJobs = prev.jobs.map((job) => {
+              if (!job.jours || job.jours[colIdx] === undefined) return job;
+              if (rowsForJob(job, [oldRow]).length === 0) return job;
 
-            if (chainMatch && styleMatch && job.jours && job.jours[colIdx] !== undefined) {
-              const updatedJours = { ...job.jours };
-              updatedJours[colIdx] = {
-                ...updatedJours[colIdx],
-                real: Number(value) || 0,
+              const cell = job.jours[colIdx];
+              const updatedJours = {
+                ...job.jours,
+                [colIdx]: {
+                  ...cell,
+                  real: Math.max(0, (cell.real || 0) + delta),
+                  cumul: Math.max(0, (cell.cumul || 0) + delta),
+                },
               };
-              return {
-                ...job,
-                jours: updatedJours,
-              };
-            }
-            return job;
-          });
+
+              return { ...job, jours: updatedJours, cumulRealise: updatedJours[colIdx].cumul };
+            });
+          }
         }
 
         return {
@@ -265,57 +282,15 @@ export function useMicroPlanning() {
             target: targetValue !== undefined ? targetValue : existing.target || job.objJour,
           };
 
-          // Recalculate cumuls sequentially across all scheduled days
-          const sortedCols = Object.keys(updatedJours)
-            .map(Number)
-            .sort((a, b) => a - b);
-          let runningCumul = 0;
-          sortedCols.forEach((c) => {
-            runningCumul += updatedJours[c].real || 0;
-            updatedJours[c].cumul = runningCumul;
-          });
-
-          changedJob = {
-            ...job,
-            jours: updatedJours,
-            cumulRealise: runningCumul,
-          };
+          changedJob = applyCumulFrom({ ...job, jours: updatedJours }, colIdx, prev.currentColIdx, true);
           return changedJob;
         });
 
-        // If updated cell is current date colIdx, also update dailyTracking row!
-        let nextDailyTracking = prev.dailyTracking;
-        if (colIdx === prev.currentColIdx && changedJob) {
-          const cJob = changedJob as MicroJob;
-          const currentRows = prev.dailyTracking[prev.currentDateKey] || [];
-          const updatedRows = currentRows.map((r) => {
-            const chainMatch =
-              cJob.chaine.toLowerCase().includes(r.chaine.toLowerCase()) ||
-              r.chaine.toLowerCase().includes(cJob.chaine.toLowerCase());
-            const styleMatch = matchStyleWithModel(cJob.style, r.modele);
-            if (chainMatch && styleMatch) {
-              const real = Math.max(0, realValue);
-              const cumulPacking = (r.cumulJ1 || 0) + real;
-              return {
-                ...r,
-                realPacking: real,
-                cumulPacking,
-                cumulCarton: cumulPacking,
-              };
-            }
-            return r;
-          });
-
-          nextDailyTracking = {
-            ...prev.dailyTracking,
-            [prev.currentDateKey]: updatedRows,
-          };
-        }
-
+        // La table journalière reste la seule source du jour courant : une case de la frise
+        // n'est jamais recopiée sur les sous-lots du suivi journalier.
         return {
           ...prev,
           jobs: nextJobs,
-          dailyTracking: nextDailyTracking,
         };
       });
     },
@@ -331,7 +306,6 @@ export function useMicroPlanning() {
       value: number
     ) => {
       setData((prev) => {
-        let changedJob: MicroJob | null = null;
         const valNum = Math.max(0, Number(value) || 0);
 
         const nextJobs = prev.jobs.map((job) => {
@@ -351,84 +325,22 @@ export function useMicroPlanning() {
             nextObjJour = valNum;
           }
 
-          // If real is updated, recompute job's total cumulRealise
-          let nextCumulRealise = job.cumulRealise;
-          if (field === 'real') {
-            const sortedCols = Object.keys(updatedJours).map(Number).sort((a, b) => a - b);
-            let running = 0;
-            sortedCols.forEach((c) => {
-              running += updatedJours[c].real || 0;
-              // If cumul wasn't manually set or was equal to running cumul, update it
-              if (!updatedJours[c].cumul || updatedJours[c].cumul === 0) {
-                updatedJours[c].cumul = running;
-              }
-            });
-            nextCumulRealise = running;
-          } else if (field === 'cumul') {
-            nextCumulRealise = Math.max(nextCumulRealise, valNum);
+          let nextJob: MicroJob = { ...job, objJour: nextObjJour, jours: updatedJours };
+
+          // Un REAL ou un CUMUL tapé à la main fait foi : la formule C(n) = C(n-1) + R(n)
+          // ne remplit que les cases encore vides, et jamais au-delà du jour courant.
+          if (field === 'real' || field === 'cumul') {
+            nextJob = applyCumulFrom(nextJob, colIdx, prev.currentColIdx, true);
           }
 
-          changedJob = {
-            ...job,
-            objJour: nextObjJour,
-            jours: updatedJours,
-            cumulRealise: nextCumulRealise,
-          };
-          return changedJob;
+          return nextJob;
         });
 
-        // Live bidirectional sync: if updated cell is current date (e.g. 12-10), update dailyTracking
-        let nextDailyTracking = prev.dailyTracking;
-        if (colIdx === prev.currentColIdx && changedJob) {
-          const cJob = changedJob as MicroJob;
-          const currentRows = prev.dailyTracking[prev.currentDateKey] || [];
-          const updatedRows = currentRows.map((r) => {
-            const chainMatch =
-              cJob.chaine.toLowerCase().includes(r.chaine.toLowerCase().split(' ')[0].toLowerCase()) ||
-              r.chaine.toLowerCase().includes(cJob.chaine.toLowerCase().split(' ')[0].toLowerCase());
-            const styleMatch = matchStyleWithModel(cJob.style, r.modele, r.chaine);
-            if (chainMatch && styleMatch) {
-              if (field === 'real') {
-                const real = valNum;
-                const cumulPacking = (r.cumulJ1 || 0) + real;
-                return {
-                  ...r,
-                  realPacking: real,
-                  cumulPacking,
-                  cumulCarton: cumulPacking,
-                };
-              } else if (field === 'cumul') {
-                return {
-                  ...r,
-                  cumulPacking: valNum,
-                  cumulCarton: valNum,
-                };
-              } else if (field === 'alim') {
-                return {
-                  ...r,
-                  alimChaine: valNum,
-                };
-              } else if (field === 'coupe') {
-                return {
-                  ...r,
-                  cumulCoupe: valNum,
-                  pctCoupe: r.of > 0 ? Math.min(1, valNum / r.of) : 0,
-                };
-              }
-            }
-            return r;
-          });
-
-          nextDailyTracking = {
-            ...prev.dailyTracking,
-            [prev.currentDateKey]: updatedRows,
-          };
-        }
-
+        // Les cases de la frise n'écrivent plus dans la table journalière : le jour courant
+        // se saisit dans le suivi journalier, lote par lote.
         return {
           ...prev,
           jobs: nextJobs,
-          dailyTracking: nextDailyTracking,
         };
       });
     },

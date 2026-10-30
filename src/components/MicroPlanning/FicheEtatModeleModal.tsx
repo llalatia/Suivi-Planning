@@ -5,6 +5,7 @@ import {
   MicroTimelineDay,
   MicroJobDayData,
 } from '../../data/microPlanningTypes';
+import { formatDay } from '../../utils/dateDisplay';
 import {
   X,
   Activity,
@@ -227,7 +228,7 @@ export const FicheEtatModeleModal: React.FC<FicheEtatModeleModalProps> = ({
                 1. Équilibre des 4 flux de production
               </h3>
               <span className="text-xs text-slate-600 font-mono">
-                Date pivot : <strong className="text-slate-800">{currentDateKey}</strong>
+                Date pivot : <strong className="text-slate-800">{formatDay(currentDateKey)}</strong>
               </span>
             </div>
 
@@ -349,7 +350,7 @@ export const FicheEtatModeleModal: React.FC<FicheEtatModeleModalProps> = ({
                     {targetEvolution.map((item, idx) => (
                       <React.Fragment key={item.colIdx}>
                         <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-md px-2.5 py-1 text-xs">
-                          <span className="font-semibold text-slate-600">Dès le {item.dateLabel} :</span>
+                          <span className="font-semibold text-slate-600">Dès le {formatDay(item.dateLabel)} :</span>
                           <span className="font-mono font-black text-indigo-700">
                             {item.target} pcs/j
                           </span>
@@ -595,11 +596,11 @@ export const FicheEtatModeleModal: React.FC<FicheEtatModeleModalProps> = ({
                         <td className="py-1.5 px-3 border-r border-slate-200 font-medium text-slate-800">
                           <div className="flex items-center gap-1.5">
                             <span>
-                              {dayInfo?.dayName} {dayInfo?.dateLabel}
+                              {dayInfo?.dayName} {formatDay(dayInfo?.dateLabel)}
                             </span>
                             {isToday && (
                               <span className="bg-amber-400 text-slate-950 text-[9px] px-1 rounded font-black">
-                                Aujourd'hui
+                                MAJ
                               </span>
                             )}
                           </div>

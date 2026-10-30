@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ProductionOrder, ProductionLine, OrderPriority, OrderStatus } from '../types';
+import { formatFullDate } from '../utils/dateDisplay';
 import {
   Search,
   Filter,
@@ -359,7 +360,7 @@ export const ExcelTable: React.FC<ExcelTableProps> = ({
 
                     {/* Fin Estimée */}
                     <td className="py-2 px-3 font-mono text-slate-700">
-                      {order.estimatedEndDate || '-'}
+                      {formatFullDate(order.estimatedEndDate)}
                     </td>
 
                     {/* Statut de ponctualité */}

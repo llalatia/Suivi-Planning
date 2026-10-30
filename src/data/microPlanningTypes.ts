@@ -14,6 +14,7 @@ export interface MicroTimelineDay {
 export interface MicroJobDayData {
   real: number;
   cumul: number;
+  reste?: number; // Calculé : Quantité OF - cumul de la veille
   target?: number;
   week?: string;
   dateLabel?: string;

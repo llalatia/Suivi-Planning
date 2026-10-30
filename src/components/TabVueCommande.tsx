@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Commande, Semaine, PlanningCell } from '../data/initialData';
 import { CommandeCalculated, nbHeures, nbBrodeuses } from '../utils/macroLogic';
+import { formatDay, formatFullDate } from '../utils/dateDisplay';
 import {
   Calendar,
   Layers,
@@ -131,12 +132,12 @@ export const TabVueCommande: React.FC<TabVueCommandeProps> = ({
             </span>
             {activeCmd.date_lancement && (
               <span>
-                Lancement : <strong className="font-mono">{activeCmd.date_lancement}</strong>
+                Lancement : <strong className="font-mono">{formatFullDate(activeCmd.date_lancement)}</strong>
               </span>
             )}
             {activeCmd.date_limite_client && (
               <span className="text-rose-700 font-medium">
-                Limite client : <strong className="font-mono">{activeCmd.date_limite_client}</strong>
+                Limite client : <strong className="font-mono">{formatFullDate(activeCmd.date_limite_client)}</strong>
               </span>
             )}
           </div>
@@ -266,7 +267,7 @@ export const TabVueCommande: React.FC<TabVueCommandeProps> = ({
                     </td>
 
                     <td className="py-2 px-4 text-center text-slate-600 border-r border-slate-100">
-                      {s.date_debut}
+                      {formatDay(s.date_debut)}
                     </td>
 
                     {/* Editable pieces cell */}

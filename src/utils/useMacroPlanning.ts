@@ -406,6 +406,69 @@ export function useMacroPlanning() {
       const updatedCommandes = prev.commandes.map((c) => (c.id === id ? updatedCmd : c));
 
       let updatedPlanning = prev.planning;
+
+      // Link Sa: If semaine_lancement is updated, sync planning cell statut 'lancement'
+      if (finalUpdates.semaine_lancement !== undefined) {
+        const targetSaCode = finalUpdates.semaine_lancement ? finalUpdates.semaine_lancement.toUpperCase().trim() : null;
+        const targetSem = targetSaCode ? prev.semaines.find((s) => s.code.toUpperCase() === targetSaCode) : null;
+
+        // Remove 'lancement' from other cells of this command
+        updatedPlanning = updatedPlanning.map((p) => {
+          if (p.commande_id === id && p.statut === 'lancement') {
+            return { ...p, statut: 'normal', manual_statut: false };
+          }
+          return p;
+        });
+
+        // Set 'lancement' on target week
+        if (targetSem) {
+          const existingIdx = updatedPlanning.findIndex((p) => p.commande_id === id && p.semaine_id === targetSem.id);
+          if (existingIdx >= 0) {
+            updatedPlanning[existingIdx] = { ...updatedPlanning[existingIdx], statut: 'lancement', manual_statut: true };
+          } else {
+            updatedPlanning.push({
+              id: Date.now() + Math.floor(Math.random() * 100000),
+              commande_id: id,
+              semaine_id: targetSem.id,
+              nb_pieces: 0,
+              statut: 'lancement',
+              manual_statut: true,
+            });
+          }
+        }
+      }
+
+      // Link Sb: If semaine_limite_client is updated, sync planning cell statut 'limite_client'
+      if (finalUpdates.semaine_limite_client !== undefined) {
+        const targetSbCode = finalUpdates.semaine_limite_client ? finalUpdates.semaine_limite_client.toUpperCase().trim() : null;
+        const targetSem = targetSbCode ? prev.semaines.find((s) => s.code.toUpperCase() === targetSbCode) : null;
+
+        // Remove 'limite_client' from other cells of this command
+        updatedPlanning = updatedPlanning.map((p) => {
+          if (p.commande_id === id && p.statut === 'limite_client') {
+            return { ...p, statut: 'normal', manual_statut: false };
+          }
+          return p;
+        });
+
+        // Set 'limite_client' on target week
+        if (targetSem) {
+          const existingIdx = updatedPlanning.findIndex((p) => p.commande_id === id && p.semaine_id === targetSem.id);
+          if (existingIdx >= 0) {
+            updatedPlanning[existingIdx] = { ...updatedPlanning[existingIdx], statut: 'limite_client', manual_statut: true };
+          } else {
+            updatedPlanning.push({
+              id: Date.now() + 1 + Math.floor(Math.random() * 100000),
+              commande_id: id,
+              semaine_id: targetSem.id,
+              nb_pieces: 0,
+              statut: 'limite_client',
+              manual_statut: true,
+            });
+          }
+        }
+      }
+
       // Si l'utilisateur a renseigné/modifié le nombre de brodeuses disponibles (ou heure_pcs / qte avec brodeuses dispo actif)
       const brodChanged =
         updates.nb_brodeuses_dispo !== undefined &&

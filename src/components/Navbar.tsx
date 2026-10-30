@@ -3,19 +3,25 @@ import {
   FileSpreadsheet,
   Download,
   Upload,
-  RotateCcw,
   Calendar,
   Layers,
   BarChart3,
   Clock,
+  LogOut,
+  User,
+  Briefcase,
 } from 'lucide-react';
 import { parseXLSXFile } from '../utils/macroExcel';
 import { PlanningData } from '../data/initialData';
 import { getCalendarWeek } from '../utils/calendarUtils';
+import { formatWeekCaption } from '../utils/dateDisplay';
+import { AuthUser } from '../utils/auth';
 
 export type PlanningPage = 'macro' | 'micro';
 
 interface NavbarProps {
+  currentUser: AuthUser | null;
+  onLogout: () => void;
   activePage: PlanningPage;
   onSelectPage: (page: PlanningPage) => void;
   currentWeek: string;
@@ -23,7 +29,6 @@ interface NavbarProps {
   onSelectWeek: (week: string) => void;
   onExportExcel: () => void;
   onImportData: (data: Partial<PlanningData>) => void;
-  onResetS34: () => void;
   totalCommandes: number;
   totalPiecesCommandees: number;
   totalPiecesFinies: number;
@@ -31,6 +36,8 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
+  currentUser,
+  onLogout,
   activePage,
   onSelectPage,
   currentWeek,
@@ -38,7 +45,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectWeek,
   onExportExcel,
   onImportData,
-  onResetS34,
   totalCommandes,
   totalPiecesCommandees,
   totalPiecesFinies,
@@ -62,9 +68,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
-      <div className="w-full px-4 py-2 flex flex-wrap items-center justify-between gap-4">
-        {/* Brand & Page Navigation Switcher */}
-        <div className="flex items-center flex-wrap gap-4">
+      <div className="w-full px-4 py-2 flex flex-col gap-2">
+        {/* Ligne 1 : marque à gauche, profil & déconnexion en haut à droite */}
+        <div className="flex items-center justify-between gap-4">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center font-bold text-white shadow-xs shrink-0">
               <FileSpreadsheet className="w-4 h-4" />
@@ -82,7 +88,58 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Core Page Switcher Tabs */}
+          {currentUser && (
+            <div className="flex items-center gap-2 shrink-0">
+              <div
+                className={`flex items-center gap-2 rounded-lg px-2.5 py-1 border shadow-xs ${
+                  currentUser.poste === 'direction'
+                    ? 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+                    : 'bg-indigo-950/40 border-indigo-500/40 text-indigo-200'
+                }`}
+                title={`Connecté en tant que ${currentUser.prenom} (${currentUser.posteLabel})`}
+              >
+                <div
+                  className={`w-6 h-6 rounded-md flex items-center justify-center font-black text-xs ${
+                    currentUser.poste === 'direction'
+                      ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
+                      : 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50'
+                  }`}
+                >
+                  {currentUser.prenom.charAt(0)}
+                </div>
+                <div className="flex flex-col text-left leading-tight">
+                  <span className="text-xs font-bold text-white flex items-center gap-1">
+                    {currentUser.prenom}
+                    {currentUser.poste === 'direction' ? (
+                      <span className="text-[10px]" title="Direction">👑</span>
+                    ) : (
+                      <span className="text-[10px]" title="Resp Planning">📋</span>
+                    )}
+                  </span>
+                  <span
+                    className={`text-[9px] font-bold uppercase tracking-wider font-mono ${
+                      currentUser.poste === 'direction' ? 'text-amber-400' : 'text-indigo-300'
+                    }`}
+                  >
+                    {currentUser.posteLabel}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={onLogout}
+                title="Déconnexion / Changer d'utilisateur"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800/90 hover:bg-rose-950/80 border border-slate-700 hover:border-rose-600/70 text-slate-300 hover:text-rose-200 text-xs font-medium transition cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Quitter</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Ligne 2 : navigation Macro/Micro + outils contextuels */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <nav className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs shadow-inner">
             <button
               onClick={() => onSelectPage('macro')}
@@ -114,7 +171,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </button>
           </nav>
-        </div>
 
         {/* Right Controls */}
         <div className="flex items-center flex-wrap gap-2">
@@ -133,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     const cal = getCalendarWeek(code);
                     return (
                       <option key={code} value={code}>
-                        {code} {cal ? `(${cal.date_label})` : ''}
+                        {formatWeekCaption(code, cal?.date_debut, cal?.date_fin, code === currentWeek)}
                       </option>
                     );
                   })}
@@ -166,24 +222,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Download className="w-3.5 h-3.5" />
                 <span>Exporter .xlsx</span>
               </button>
-
-              <button
-                onClick={onResetS34}
-                title="Réinitialiser à l'état exact du fichier original MACRO-PLANNING BROD TRADI S34.xlsx"
-                className="flex items-center space-x-1 px-2.5 py-1 bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 border border-slate-700 rounded text-xs font-medium transition cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Réinitialiser S34</span>
-              </button>
             </>
           ) : (
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-slate-200 font-mono text-[11px]">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                MICRO-PLANNING MAJ du 12-10
+                Référence : MICRO-PLANNING MAJ du 12-10
               </span>
             </div>
           )}
+        </div>
         </div>
       </div>
     </header>

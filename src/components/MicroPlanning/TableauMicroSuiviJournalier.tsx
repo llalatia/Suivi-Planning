@@ -5,6 +5,7 @@ import {
   MicroJob,
   MicroJobDayData,
 } from '../../data/microPlanningTypes';
+import { formatDay, isSameDay } from '../../utils/dateDisplay';
 import {
   Package,
   Scissors,
@@ -81,8 +82,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
 
   // Semaine de référence courante basée sur la date en cours (ex: 12/10 -> S41)
   const activeTimelineWeek = useMemo(() => {
-    const formatted = currentDateKey.replace('-', '/');
-    const match = timelineDays.find((d) => d.dateLabel === formatted);
+    const match = timelineDays.find((d) => isSameDay(d.dateLabel, currentDateKey));
     if (match?.week) return match.week;
     if (allWeeks.includes('S41')) return 'S41';
     return allWeeks[0] || 'S41';
@@ -577,13 +577,32 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
          ========================================================================= */}
       <div ref={tableContainerRef} className="overflow-x-auto w-full relative">
         <table className="text-xs text-left border-collapse table-fixed min-w-full">
+          {/* STRICT COLUMN WIDTHS FOR SUIVI JOURNALIER */}
+          <colgroup>
+            <col style={{ width: '40px', minWidth: '40px', maxWidth: '40px' }} />
+            <col style={{ width: '145px', minWidth: '145px', maxWidth: '145px' }} />
+            <col style={{ width: '190px', minWidth: '190px', maxWidth: '190px' }} />
+            <col style={{ width: '95px', minWidth: '95px', maxWidth: '95px' }} />
+            <col style={{ width: '65px', minWidth: '65px', maxWidth: '65px' }} />
+            <col style={{ width: '65px', minWidth: '65px', maxWidth: '65px' }} />
+            <col style={{ width: '65px', minWidth: '65px', maxWidth: '65px' }} />
+            <col style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }} />
+            <col style={{ width: '65px', minWidth: '65px', maxWidth: '65px' }} />
+            {displayedDays.map((d) => (
+              <col
+                key={`col_day_${d.colIdx}`}
+                style={{ width: '80px', minWidth: '80px', maxWidth: '90px' }}
+              />
+            ))}
+          </colgroup>
+
           {/* Ligne 1 d'en-tête : Identification + Grandes Semaines (S50, S51...) */}
           <thead>
             <tr className="bg-slate-900 text-white font-bold text-[11px] uppercase tracking-wider">
               {/* Colonne 0 : Index */}
               <th
                 rowSpan={2}
-                className="sticky left-0 z-30 bg-slate-900 py-2 px-1 text-center border-r border-slate-700 w-10 min-w-[40px] max-w-[40px]"
+                className="sticky left-0 z-40 bg-slate-900 py-2 px-1 text-center border-r border-slate-700 w-10 min-w-[40px] max-w-[40px]"
               >
                 #
               </th>
@@ -591,7 +610,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
               {/* Colonne 1 : Chaîne */}
               <th
                 rowSpan={2}
-                className="sticky left-[40px] z-30 bg-slate-900 py-2 px-2.5 border-r border-slate-700 w-36 min-w-[145px] max-w-[145px]"
+                className="sticky left-[40px] z-40 bg-slate-900 py-2 px-2.5 border-r border-slate-700 w-36 min-w-[145px] max-w-[145px]"
               >
                 CHAINE / LINE
               </th>
@@ -599,7 +618,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
               {/* Colonne 2 : Modèle */}
               <th
                 rowSpan={2}
-                className="sticky left-[185px] z-30 bg-slate-900 py-2 px-2.5 border-r border-slate-700 w-48 min-w-[190px] max-w-[190px]"
+                className="sticky left-[185px] z-40 bg-slate-900 py-2 px-2.5 border-r border-slate-700 w-48 min-w-[190px] max-w-[190px]"
               >
                 MODELE / STYLE
               </th>
@@ -607,7 +626,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
               {/* Colonne 3 : Client */}
               <th
                 rowSpan={2}
-                className="sticky left-[375px] z-30 bg-slate-900 py-2 px-2 border-r border-slate-700 w-24 min-w-[95px] max-w-[95px]"
+                className="sticky left-[375px] z-40 bg-slate-900 py-2 px-2 border-r border-slate-700 w-24 min-w-[95px] max-w-[95px]"
               >
                 CLIENT
               </th>
@@ -615,7 +634,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
               {/* Colonne 4 : OF */}
               <th
                 rowSpan={2}
-                className="sticky left-[470px] z-30 bg-slate-950 py-2 px-2 text-right border-r border-slate-700 w-16 min-w-[65px] max-w-[65px] text-white"
+                className="sticky left-[470px] z-40 bg-slate-950 py-2 px-2 text-right border-r border-slate-700 w-16 min-w-[65px] max-w-[65px] text-white"
               >
                 OF
               </th>
@@ -623,7 +642,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
               {/* Colonne 5 : Date Livraison */}
               <th
                 rowSpan={2}
-                className="sticky left-[535px] z-30 bg-slate-900 py-2 px-1 text-center border-r border-slate-700 w-16 min-w-[65px] max-w-[65px] text-slate-200"
+                className="sticky left-[535px] z-40 bg-slate-900 py-2 px-1 text-center border-r border-slate-700 w-16 min-w-[65px] max-w-[65px] text-slate-200"
               >
                 LIVR.
               </th>
@@ -631,8 +650,8 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
               {/* Colonne 6 : Réalisé Jour */}
               <th
                 rowSpan={2}
-                className="sticky left-[600px] z-30 bg-slate-900 py-2 px-2 text-right border-r border-slate-700 w-16 min-w-[65px] max-w-[65px] text-white"
-                title={`Quantité emballée le ${currentDateKey}`}
+                className="sticky left-[600px] z-40 bg-slate-900 py-2 px-2 text-right border-r border-slate-700 w-16 min-w-[65px] max-w-[65px] text-white"
+                title={`Quantité emballée le ${formatDay(currentDateKey)}`}
               >
                 REAL (J)
               </th>
@@ -640,7 +659,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
               {/* Colonne 7 : Cumul Packing */}
               <th
                 rowSpan={2}
-                className="sticky left-[665px] z-30 bg-slate-900 py-2 px-2 text-right border-r border-slate-700 w-20 min-w-[80px] max-w-[80px] text-white"
+                className="sticky left-[665px] z-40 bg-slate-900 py-2 px-2 text-right border-r border-slate-700 w-20 min-w-[80px] max-w-[80px] text-white"
               >
                 CUMUL
               </th>
@@ -648,7 +667,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
               {/* Colonne 8 : Reste à faire (FRONTIÈRE ROBUSTE AVEC LE CALENDRIER) */}
               <th
                 rowSpan={2}
-                className="sticky left-[745px] z-30 bg-slate-950 py-2 px-2 text-right border-r-4 border-slate-700 shadow-[4px_0_10px_rgba(0,0,0,0.18)] w-16 min-w-[65px] max-w-[65px] text-white"
+                className="sticky left-[745px] z-40 bg-slate-950 py-2 px-2 text-right border-r-4 border-slate-700 shadow-[4px_0_10px_rgba(0,0,0,0.22)] w-16 min-w-[65px] max-w-[65px] text-white"
               >
                 RESTE
               </th>
@@ -669,7 +688,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
                       <span>{w}</span>
                       {isCourante && (
                         <span className="text-[9px] bg-amber-900 text-white px-1 py-0.2 rounded font-mono">
-                          ACTIVE
+                          ★ {formatDay(currentDateKey)} actif
                         </span>
                       )}
                     </div>
@@ -712,9 +731,9 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
                   className={`py-1 px-1 text-center border-r border-slate-700 w-12 min-w-[48px] max-w-[48px] ${
                     td.isToday ? 'bg-amber-400 text-slate-950 font-extrabold' : 'text-slate-300'
                   }`}
-                  title={`${td.dayName} ${td.dateLabel} (Semaine ${td.week})`}
+                  title={`${td.dayName} ${formatDay(td.dateLabel)} (${td.week})`}
                 >
-                  <div>{td.dateLabel}</div>
+                  <div>{formatDay(td.dateLabel)}</div>
                   <div className="text-[9px] opacity-80 uppercase">{td.dayName}</div>
                 </th>
               ))}
@@ -742,25 +761,23 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
                 const progressPct = ofVal > 0 ? Math.min(100, Math.round((cumulPack / ofVal) * 100)) : 0;
                 const coupePct = Math.round((row.pctCoupe || 0) * 100);
 
-                const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+                const rowBg = isCompleted ? 'bg-emerald-50' : idx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
 
                 return (
                   <tr
                     key={row.id}
-                    className={`hover:bg-amber-50/50 transition-colors ${rowBg} ${
-                      isCompleted ? 'bg-emerald-50/30' : ''
-                    }`}
+                    className={`hover:bg-amber-100/70 transition-colors ${rowBg}`}
                   >
                     {/* Index */}
                     <td
-                      className={`sticky left-0 z-20 ${rowBg} py-2 px-1 text-center text-slate-400 font-sans font-medium border-r border-slate-200 w-10 min-w-[40px] max-w-[40px]`}
+                      className={`sticky left-0 z-30 ${rowBg} py-2 px-1 text-center text-slate-400 font-sans font-medium border-r border-slate-200 w-10 min-w-[40px] max-w-[40px]`}
                     >
                       {idx + 1}
                     </td>
 
                     {/* Chaîne */}
                     <td
-                      className={`sticky left-[40px] z-20 ${rowBg} py-2 px-2 border-r border-slate-200 font-sans w-36 min-w-[145px] max-w-[145px]`}
+                      className={`sticky left-[40px] z-30 ${rowBg} py-2 px-2 border-r border-slate-200 font-sans w-36 min-w-[145px] max-w-[145px]`}
                     >
                       <span
                         className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border truncate max-w-full ${getChainColor(
@@ -774,7 +791,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
 
                     {/* Modèle / Style */}
                     <td
-                      className={`sticky left-[185px] z-20 ${rowBg} py-2 px-2.5 border-r border-slate-200 font-sans w-48 min-w-[190px] max-w-[190px]`}
+                      className={`sticky left-[185px] z-30 ${rowBg} py-2 px-2.5 border-r border-slate-200 font-sans w-48 min-w-[190px] max-w-[190px]`}
                       style={{
                         borderLeft: `3px solid ${getModelColor(row.modele, modelColors, row.color)}`,
                       }}
@@ -804,7 +821,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
 
                     {/* Client */}
                     <td
-                      className={`sticky left-[375px] z-20 ${rowBg} py-2 px-2 border-r border-slate-200 font-sans text-slate-700 truncate w-24 min-w-[95px] max-w-[95px]`}
+                      className={`sticky left-[375px] z-30 ${rowBg} py-2 px-2 border-r border-slate-200 font-sans text-slate-700 truncate w-24 min-w-[95px] max-w-[95px]`}
                       title={row.client || job?.client || '-'}
                     >
                       {row.client || job?.client || '-'}
@@ -812,7 +829,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
 
                     {/* OF (Total) */}
                     <td
-                      className={`sticky left-[470px] z-20 ${rowBg} py-2 px-2 text-right font-extrabold text-slate-900 border-r border-slate-200 w-16 min-w-[65px] max-w-[65px]`}
+                      className={`sticky left-[470px] z-30 ${rowBg} py-2 px-2 text-right font-extrabold text-slate-900 border-r border-slate-200 w-16 min-w-[65px] max-w-[65px]`}
                     >
                       <input
                         type="number"
@@ -825,7 +842,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
 
                     {/* Date Livraison */}
                     <td
-                      className={`sticky left-[535px] z-20 ${rowBg} py-2 px-1 text-center border-r border-slate-200 w-16 min-w-[65px] max-w-[65px]`}
+                      className={`sticky left-[535px] z-30 ${rowBg} py-2 px-1 text-center border-r border-slate-200 w-16 min-w-[65px] max-w-[65px]`}
                     >
                       <input
                         type="text"
@@ -839,7 +856,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
 
                     {/* REAL PACKING (Jour J) */}
                     <td
-                      className={`sticky left-[600px] z-20 ${rowBg} py-2 px-2 text-right border-r border-slate-200 w-16 min-w-[65px] max-w-[65px]`}
+                      className={`sticky left-[600px] z-30 ${rowBg} py-2 px-2 text-right border-r border-slate-200 w-16 min-w-[65px] max-w-[65px]`}
                     >
                       <input
                         type="number"
@@ -856,7 +873,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
 
                     {/* CUMUL PACKING */}
                     <td
-                      className={`sticky left-[665px] z-20 ${rowBg} py-2 px-2 text-right font-extrabold text-slate-900 border-r border-slate-200 w-20 min-w-[80px] max-w-[80px]`}
+                      className={`sticky left-[665px] z-30 ${rowBg} py-2 px-2 text-right font-extrabold text-slate-900 border-r border-slate-200 w-20 min-w-[80px] max-w-[80px]`}
                     >
                       <div className="flex items-center justify-end gap-1">
                         <span>{cumulPack}</span>
@@ -868,7 +885,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
 
                     {/* RESTE À FAIRE (FRONTIÈRE ROBUSTE AVEC LE CALENDRIER) */}
                     <td
-                      className={`sticky left-[745px] z-20 ${rowBg} py-2 px-2 text-right font-extrabold border-r-4 border-slate-700 shadow-[4px_0_10px_rgba(0,0,0,0.18)] w-16 min-w-[65px] max-w-[65px] ${
+                      className={`sticky left-[745px] z-30 ${rowBg} py-2 px-2 text-right font-extrabold border-r-4 border-slate-700 shadow-[4px_0_10px_rgba(0,0,0,0.22)] w-16 min-w-[65px] max-w-[65px] ${
                         reste === 0 ? 'text-slate-400' : 'text-slate-950'
                       }`}
                     >
@@ -891,7 +908,7 @@ export const TableauMicroSuiviJournalier: React.FC<TableauMicroSuiviJournalierPr
                             }
                           }}
                           className={`py-1 px-0.5 text-center border-r border-slate-200 transition-colors cursor-pointer w-12 min-w-[48px] max-w-[48px] ${visual.bgClass} ${visual.textClass}`}
-                          title={`${td.dayName} ${td.dateLabel} (${td.week}) · ${
+                          title={`${td.dayName} ${formatDay(td.dateLabel)} (${td.week}) · ${
                             visual.val > 0 ? visual.val + ' pcs' : '0 pcs'
                           } ${visual.isSa ? '· Lancement (Sa)' : ''} ${
                             visual.isSb ? '· Limite client (Sb)' : ''

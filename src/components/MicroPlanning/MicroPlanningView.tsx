@@ -7,6 +7,7 @@ import { MicroPlanningModal } from './MicroPlanningModal';
 import { FicheEtatModeleModal } from './FicheEtatModeleModal';
 import { VueGlobaleModelesModal } from './VueGlobaleModelesModal';
 import { MicroJob } from '../../data/microPlanningTypes';
+import { formatDay, trackingKeyFor } from '../../utils/dateDisplay';
 import {
   Calendar,
   Layers,
@@ -72,15 +73,15 @@ export const MicroPlanningView: React.FC<MicroPlanningViewProps> = ({ onShowToas
       ? timelineDays[currentDayIndex + 1]
       : null;
 
-  // Next planned days from the timeline (e.g. 13-10, 14-10, 15-10, 16-10...)
+  // Next planned days from the timeline (e.g. 13/10, 14/10, 15/10, 16/10...)
   const upcomingTimelineDates = useMemo(() => {
     return timelineDays
       .filter((d) => d.colIdx > currentColIdx && d.colIdx <= currentColIdx + 20)
       .map((d) => ({
-        key: d.dateLabel.replace('/', '-'),
-        label: `${d.dateLabel} (${d.dayName} ${d.week})`,
+        key: trackingKeyFor(d.dateLabel, metrics.availableDates),
+        label: `${formatDay(d.dateLabel)} (${d.dayName} ${d.week})`,
       }));
-  }, [timelineDays, currentColIdx]);
+  }, [timelineDays, currentColIdx, metrics.availableDates]);
 
   const handleExport = () => {
     exportData();
@@ -104,11 +105,11 @@ export const MicroPlanningView: React.FC<MicroPlanningViewProps> = ({ onShowToas
 
   const handleCreateNewDate = () => {
     if (!newDateInput.trim()) return;
-    const formatted = newDateInput.trim();
+    const formatted = trackingKeyFor(newDateInput.trim(), metrics.availableDates);
     setDateKey(formatted);
     setIsAddingDate(false);
     setNewDateInput('');
-    onShowToast(`Nouveau point journalier créé pour le ${formatted}.`);
+    onShowToast(`Nouveau point journalier créé pour le ${formatDay(formatted)}.`);
   };
 
   return (
@@ -146,7 +147,7 @@ export const MicroPlanningView: React.FC<MicroPlanningViewProps> = ({ onShowToas
               <TableIcon className="w-3.5 h-3.5" />
               <span>Suivi Atelier Seul</span>
               <span className="bg-[#FFFF00] text-slate-950 text-[10px] px-1.5 py-0.2 rounded font-mono font-black border border-amber-400">
-                MAJ {currentDateKey}
+                MAJ {formatDay(currentDateKey)}
               </span>
             </button>
 
@@ -208,12 +209,12 @@ export const MicroPlanningView: React.FC<MicroPlanningViewProps> = ({ onShowToas
               {prevDay && (
                 <button
                   onClick={() => {
-                    const k = prevDay.dateLabel.replace('/', '-');
+                    const k = trackingKeyFor(prevDay.dateLabel, metrics.availableDates);
                     setDateKey(k);
-                    onShowToast(`Point de suivi : ${k}`);
+                    onShowToast(`Point de suivi : ${formatDay(k)}`);
                   }}
                   className="p-1 text-slate-800 hover:text-slate-950 hover:bg-amber-300 rounded cursor-pointer transition"
-                  title={`Jour précédent : ${prevDay.dateLabel}`}
+                  title={`Jour précédent : ${formatDay(prevDay.dateLabel)}`}
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
@@ -225,18 +226,19 @@ export const MicroPlanningView: React.FC<MicroPlanningViewProps> = ({ onShowToas
                 value={currentDateKey}
                 onChange={(e) => {
                   setDateKey(e.target.value);
-                  onShowToast(`Affichage du point journalier : ${e.target.value}`);
+                  onShowToast(`Affichage du point journalier : ${formatDay(e.target.value)}`);
                 }}
                 className="bg-[#FFFF00] text-slate-950 font-black font-mono px-2 py-0.5 rounded cursor-pointer border border-amber-400 focus:outline-none shadow-2xs"
               >
-                <optgroup label="Historique réalisé (Arrêté au 12/10)">
+                <optgroup label="Historique réalisé">
                   {metrics.availableDates.map((d) => (
                     <option key={d} value={d}>
-                      {d} {d === '12-10' ? '★ (Clôture usine)' : ''}
+                      {formatDay(d)}
+                      {d === currentDateKey ? ' ★ actif' : ''}
                     </option>
                   ))}
                 </optgroup>
-                <optgroup label="Jours suivants (+S41 / Prévisions)">
+                <optgroup label={`Jours suivants (+${timelineDays[currentDayIndex]?.week || 'Sxx'} / prévisions)`}>
                   {upcomingTimelineDates.map((u) => (
                     <option key={u.key} value={u.key}>
                       {u.label}
@@ -249,12 +251,12 @@ export const MicroPlanningView: React.FC<MicroPlanningViewProps> = ({ onShowToas
               {nextDay && (
                 <button
                   onClick={() => {
-                    const k = nextDay.dateLabel.replace('/', '-');
+                    const k = trackingKeyFor(nextDay.dateLabel, metrics.availableDates);
                     setDateKey(k);
-                    onShowToast(`Point de suivi : ${k}`);
+                    onShowToast(`Point de suivi : ${formatDay(k)}`);
                   }}
                   className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold text-slate-900 hover:text-slate-950 bg-amber-300/80 hover:bg-amber-300 rounded cursor-pointer transition shadow-2xs border border-amber-400"
-                  title={`Avancer au jour suivant (+1j) : ${nextDay.dateLabel}`}
+                  title={`Avancer au jour suivant (+1j) : ${formatDay(nextDay.dateLabel)}`}
                 >
                   <span>+1j</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -266,7 +268,7 @@ export const MicroPlanningView: React.FC<MicroPlanningViewProps> = ({ onShowToas
               <div className="flex items-center gap-1">
                 <input
                   type="text"
-                  placeholder="ex: 13-10"
+                  placeholder="ex: 13/10"
                   value={newDateInput}
                   onChange={(e) => setNewDateInput(e.target.value)}
                   className="w-20 text-xs border border-slate-400 rounded px-2 py-1 focus:outline-none"
@@ -330,7 +332,7 @@ export const MicroPlanningView: React.FC<MicroPlanningViewProps> = ({ onShowToas
                   )
                 ) {
                   resetToOriginal();
-                  onShowToast('Données réinitialisées à la référence usine (12-10).');
+                  onShowToast('Données réinitialisées à la référence usine "MICRO-PLANNING MAJ du 12-10".');
                 }
               }}
               className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition cursor-pointer"
